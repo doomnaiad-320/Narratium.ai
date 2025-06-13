@@ -69,12 +69,30 @@ export default function CharacterCards() {
   const [isDownloadModalOpen, setIsDownloadModalOpen] = useState(false);
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [viewMode, setViewMode] = useState<"grid" | "carousel">("grid");
+  const [mounted, setMounted] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
 
   useEffect(() => {
     const savedViewMode = localStorage.getItem("characterCardsViewMode");
     if (savedViewMode === "grid" || savedViewMode === "carousel") {
       setViewMode(savedViewMode);
     }
+  }, []);
+
+  useEffect(() => {
+    setMounted(true);
+    const yellowImg = new Image();
+    const redImg = new Image();
+    
+    yellowImg.src = "/background_yellow.png";
+    redImg.src = "/background_red.png";
+    
+    Promise.all([
+      new Promise(resolve => yellowImg.onload = resolve),
+      new Promise(resolve => redImg.onload = resolve),
+    ]).then(() => {
+      setImagesLoaded(true);
+    });
   }, []);
 
   const fetchCharacters = async () => {
@@ -130,10 +148,14 @@ export default function CharacterCards() {
     fetchCharacters();
   }, []);
 
+  if (!mounted) return null;
+
   return (
     <div className="min-h-screen w-full overflow-auto login-fantasy-bg relative">
       <div
-        className="absolute inset-0 z-0 opacity-35"
+        className={`absolute inset-0 z-0 opacity-35 transition-opacity duration-500 ${
+          imagesLoaded ? "opacity-35" : "opacity-0"
+        }`}
         style={{
           backgroundImage: "url('/background_yellow.png')",
           backgroundSize: "cover",
@@ -143,7 +165,9 @@ export default function CharacterCards() {
       />
 
       <div
-        className="absolute inset-0 z-1 opacity-45"
+        className={`absolute inset-0 z-1 opacity-45 transition-opacity duration-500 ${
+          imagesLoaded ? "opacity-45" : "opacity-0"
+        }`}
         style={{
           backgroundImage: "url('/background_red.png')",
           backgroundSize: "cover",

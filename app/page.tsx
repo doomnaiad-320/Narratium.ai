@@ -32,10 +32,23 @@ import "./styles/fantasy-ui.css";
 function HomeContent() {
   const { t, fontClass, serifFontClass } = useLanguage();
   const [mounted, setMounted] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
   const { isTourVisible, currentTourSteps, completeTour, skipTour } = useTour();
 
   useEffect(() => {
     setMounted(true);
+    const yellowImg = new Image();
+    const redImg = new Image();
+    
+    yellowImg.src = "/background_yellow.png";
+    redImg.src = "/background_red.png";
+    
+    Promise.all([
+      new Promise(resolve => yellowImg.onload = resolve),
+      new Promise(resolve => redImg.onload = resolve),
+    ]).then(() => {
+      setImagesLoaded(true);
+    });
   }, []);
 
   if (!mounted) return null;
@@ -43,7 +56,9 @@ function HomeContent() {
   return (
     <div className="flex flex-col items-center justify-center h-full login-fantasy-bg relative">
       <div
-        className="absolute inset-0 z-0 opacity-35"
+        className={`absolute inset-0 z-0 opacity-35 transition-opacity duration-500 ${
+          imagesLoaded ? "opacity-35" : "opacity-0"
+        }`}
         style={{
           backgroundImage: "url('/background_yellow.png')",
           backgroundSize: "cover",
@@ -53,7 +68,9 @@ function HomeContent() {
       />
 
       <div
-        className="absolute inset-0 z-1 opacity-45"
+        className={`absolute inset-0 z-1 opacity-45 transition-opacity duration-500 ${
+          imagesLoaded ? "opacity-45" : "opacity-0"
+        }`}
         style={{
           backgroundImage: "url('/background_red.png')",
           backgroundSize: "cover",
