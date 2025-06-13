@@ -15,7 +15,7 @@
  * 
  * Dependencies:
  * - ImportCharacterModal: For importing new characters
- * - EditCharacterModal: For editing existing characters
+ * - EditCharacterModal: For editing existing character
  * - DownloadCharacterModal: For downloading character data
  * - CharacterCardGrid: For displaying characters in grid view
  * - Framer Motion: For animations
@@ -215,20 +215,54 @@ export default function CharacterCards() {
             </div>
             <div className="flex gap-3">
               <motion.div
-                className={`portal-button text-[#c0a480] hover:text-[#ffd475] px-4 py-2 border border-[#534741] rounded-lg cursor-pointer ${fontClass}`}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                className={`portal-button relative overflow-hidden px-4 py-2 rounded-lg cursor-pointer ${fontClass}
+                  bg-gradient-to-b from-[#2a231c] to-[#1a1510]
+                  border border-[#534741]
+                  shadow-[0_0_15px_rgba(192,164,128,0.1)]
+                  hover:shadow-[0_0_20px_rgba(192,164,128,0.2)]
+                  before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-[rgba(192,164,128,0.1)] before:to-transparent
+                  before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700
+                  group`}
+                whileHover={{ 
+                  scale: 1.01,
+                  boxShadow: "0 0 25px rgba(192,164,128,0.3)",
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 400, 
+                  damping: 10, 
+                }}
                 onClick={() => setIsImportModalOpen(true)}
               >
-                {t("characterCardsPage.importCharacter")}
+                <span className="relative z-10 text-[#c0a480] group-hover:text-[#ffd475] transition-colors duration-300">
+                  {t("characterCardsPage.importCharacter")}
+                </span>
               </motion.div>
               <motion.div
-                className={`portal-button text-[#c0a480] hover:text-[#ffd475] px-4 py-2 border border-[#534741] rounded-lg cursor-pointer ${fontClass}`}
-                whileHover={{ scale: 1.05 }}
-                transition={{ type: "spring", stiffness: 400, damping: 10 }}
+                className={`portal-button relative overflow-hidden px-4 py-2 rounded-lg cursor-pointer ${fontClass}
+                  bg-gradient-to-b from-[#2a231c] to-[#1a1510]
+                  border border-[#534741]
+                  shadow-[0_0_15px_rgba(192,164,128,0.1)]
+                  hover:shadow-[0_0_20px_rgba(192,164,128,0.2)]
+                  before:absolute before:inset-0 before:bg-gradient-to-r before:from-transparent before:via-[rgba(192,164,128,0.1)] before:to-transparent
+                  before:translate-x-[-100%] hover:before:translate-x-[100%] before:transition-transform before:duration-700
+                  group`}
+                whileHover={{ 
+                  scale: 1.01,
+                  boxShadow: "0 0 25px rgba(192,164,128,0.3)",
+                }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ 
+                  type: "spring", 
+                  stiffness: 400, 
+                  damping: 10, 
+                }}
                 onClick={() => setIsDownloadModalOpen(true)}
               >
-                {t("characterCardsPage.downloadCharacter")}
+                <span className="relative z-10 text-[#c0a480] group-hover:text-[#ffd475] transition-colors duration-300">
+                  {t("characterCardsPage.downloadCharacter")}
+                </span>
               </motion.div>
             </div>
           </motion.div>

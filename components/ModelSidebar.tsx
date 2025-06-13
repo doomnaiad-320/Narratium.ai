@@ -27,6 +27,9 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
   const [configs, setConfigs] = useState<APIConfig[]>([]);
   const [activeConfigId, setActiveConfigId] = useState<string>("");
   const [showNewConfigForm, setShowNewConfigForm] = useState(false);
+  const [editingConfigId, setEditingConfigId] = useState<string>("");
+  const [editingName, setEditingName] = useState("");
+  const [showEditHint, setShowEditHint] = useState(true);
   
   const [llmType, setLlmType] = useState<LLMType>("openai");
   const [baseUrl, setBaseUrl] = useState("");
@@ -273,7 +276,37 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
       setTimeout(() => setGetModelListError(false), 2000);
     }
   };
-  
+
+  const handleStartEditName = (config: APIConfig, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setEditingConfigId(config.id);
+    setEditingName(config.name);
+    setShowEditHint(false);
+  };
+
+  const handleSaveName = () => {
+    if (!editingName.trim()) return;
+
+    const updatedConfigs = configs.map(config => {
+      if (config.id === editingConfigId) {
+        return { ...config, name: editingName.trim() };
+      }
+      return config;
+    });
+
+    setConfigs(updatedConfigs);
+    localStorage.setItem("apiConfigs", JSON.stringify(updatedConfigs));
+    setEditingConfigId("");
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      handleSaveName();
+    } else if (e.key === "Escape") {
+      setEditingConfigId("");
+    }
+  };
+
   return (
     <div
       className={`h-full magic-border border-l border-[#534741] breathing-bg text-[#d0d0d0] transition-all duration-300 overflow-hidden ${isOpen ? "w-64" : "w-0"
@@ -285,7 +318,6 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
           <button
             onClick={() => {trackButtonClick("ModelSidebar", "关闭模型设置"); toggleSidebar();}}
             className="w-6 h-6 flex items-center justify-center text-[#f4e8c1] bg-[#1c1c1c] rounded-md border border-[#333333] shadow-inner transition-all duration-300 hover:bg-[#252525] hover:border-[#444444] hover:text-amber-400 hover:shadow-[0_0_8px_rgba(251,146,60,0.4)]"
-            aria-label="收起模型设置"
           >
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300">
               <path d="M9 18l6-6-6-6" />
@@ -311,7 +343,7 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
             
             {configs.length > 0 && (
               <div className="mb-3 flex flex-col gap-1.5 max-h-50 overflow-y-auto fantasy-scrollbar pr-1">
-                {configs.map(config => (
+                {configs.map((config, idx) => (
                   <div 
                     key={config.id} 
                     className={`flex items-center justify-between p-1.5 rounded-md cursor-pointer text-sm transition-all duration-200 group ${
@@ -321,13 +353,40 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                     }`}
                     onClick={() => handleSwitchConfig(config.id)}
                   >
-                    <div className="flex items-center">
-                      <span className="text-xs">{config.name}</span>
-                      <span className="ml-2 text-xs text-[#8a8a8a] px-1.5 py-0.5 rounded bg-[#1c1c1c] border border-[#333333]">{config.type}</span>
+                    <div className="relative flex items-center flex-1 min-w-0 group/name">
+                      {editingConfigId === config.id ? (
+                        <input
+                          type="text"
+                          value={editingName}
+                          onChange={(e) => setEditingName(e.target.value)}
+                          onBlur={handleSaveName}
+                          onKeyDown={handleKeyDown}
+                          className="bg-[#1c1c1c] border border-[#534741] rounded py-0.5 px-1 text-xs text-[#f4e8c1] w-full focus:border-[#d1a35c] focus:outline-none"
+                          onClick={e => e.stopPropagation()}
+                          autoFocus
+                        />
+                      ) : (
+                        <>
+                          <span 
+                            className="text-xs truncate cursor-text hover:text-[#f4e8c1] transition-colors" 
+                            onDoubleClick={(e) => handleStartEditName(config, e)}
+                          >
+                            {config.name}
+                          </span>
+                          {showEditHint && (
+                            <span
+                              className={`absolute ${idx === 0 ? "top-full mt-1" : "-top-6"} left-0 z-20 bg-[#2a2522] text-[#d1a35c] text-[10px] px-2 py-1 rounded border border-[#d1a35c] whitespace-nowrap opacity-0 group-hover/name:opacity-100 transition-all duration-200 pointer-events-none shadow-[0_0_8px_rgba(209,163,92,0.2)]`}
+                            >
+                              {t("modelSettings.doubleClickToEditName")}
+                            </span>
+                          )}
+                          <span className="ml-2 text-xs text-[#8a8a8a] px-1.5 py-0.5 rounded bg-[#1c1c1c] border border-[#333333] flex-shrink-0">{config.type}</span>
+                        </>
+                      )}
                     </div>
                     <button 
                       onClick={(e) => { trackButtonClick("ModelSidebar", "删除配置"); e.stopPropagation(); handleDeleteConfig(config.id); }}
-                      className="text-red-400 hover:text-red-300 text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-red-400 hover:text-red-300 text-xs p-1 opacity-0 group-hover:opacity-100 transition-opacity ml-1 flex-shrink-0"
                     >
                       ×
                     </button>

@@ -19,7 +19,6 @@ export class LLMNode extends NodeBase {
   }
 
   protected async _call(input: NodeInput): Promise<NodeOutput> {    
-    console.log("llm-input", input);
     const systemMessage = input.systemMessage;
     const userMessage = input.userMessage;
     const modelName = input.modelName;
@@ -35,10 +34,6 @@ export class LLMNode extends NodeBase {
 
     if (!userMessage) { 
       throw new Error("User message is required for LLMNode");
-    }
-
-    if (!modelName || !apiKey) {
-      throw new Error("Model name and API key are required for LLMNode");
     }
 
     const llmResponse = await this.executeTool(

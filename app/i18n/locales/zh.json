@@ -60,7 +60,8 @@
     "createFirstConfig": "创建你的第一个配置",
     "getModelList": "获取模型列表",
     "getModelListSuccess": "获取模型列表成功",
-    "getModelListError": "获取模型列表失败"
+    "getModelListError": "获取模型列表失败",
+    "doubleClickToEditName": "双击可修改名称"
   },
   "llmSettings": {
     "title": "设置",
@@ -110,7 +111,7 @@
     "register": "注册",
     "welcomeBack": "欢迎回来",
     "continueJourney": "登录以继续您的旅程",
-    "emailPlaceholder": "在此刻下魔法邮箱...",
+    "emailPlaceholder": "在此刻下你的名字",
     "passwordPlaceholder": "输入密码",
     "codePlaceholder": "输入验证码",
     "wizardQuestion": "✨ 勇者，请留下您的姓名",
@@ -477,6 +478,15 @@
       "downloadAndImport": "下载并导入",
       "by": "作者：",
       "unknownAuthor": "佚名"
+  },
+  "creatorInput": {
+    "title": "Creator Studio",
+    "subtitle": "开始创作史诗级的故事",
+    "placeholder": "输入您的创作想法...",
+    "sendMessage": "发送消息",
+    "enterToSend": "按 Enter 发送，Shift + Enter 换行",
+    "characterCount": "{count}/1000",
+    "exampleStories": "《荒野求生》、《哈利波特》、《魔戒》，任何故事随心而动"
   },
   "worldBook": {
     "title": "世界书",

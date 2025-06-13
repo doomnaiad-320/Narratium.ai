@@ -105,11 +105,6 @@ cd Narratium
 pnpm install
 ```
 
-### 配置模型
-
-* **OpenAI API Key**
-* **Ollama 本地服务**
-
 ### 运行项目
 
 ```bash

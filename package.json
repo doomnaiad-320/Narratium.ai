@@ -26,6 +26,7 @@
     "framer-motion": "^12.6.3",
     "gsap": "^3.12.7",
     "langchain": "^0.3.24",
+    "lucide-react": "^0.514.0",
     "marked": "^15.0.12",
     "next": "15.2.4",
     "png-chunk-text": "^1.0.0",

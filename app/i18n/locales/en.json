@@ -60,7 +60,8 @@
     "getModelList": "Get Model List",
     "getModelListSuccess": "Get Model List Success",
     "getModelListError": "Get Model List Error",
-    "configCreated": "Configuration created"
+    "configCreated": "Configuration created",
+    "doubleClickToEditName": "Double click to edit name"
   },
   "llmSettings": {
     "title": "Settings",
@@ -110,7 +111,7 @@
     "register": "Register",
     "welcomeBack": "Welcome Back",
     "continueJourney": "Sign in to continue your journey",
-    "emailPlaceholder": "Enter your email...",
+    "emailPlaceholder": "Enter your name",
     "passwordPlaceholder": "Enter your password...",
     "codePlaceholder": "Enter the verification code...",
     "wizardQuestion": "✨ Brave adventurer, please leave your name",
@@ -677,15 +678,24 @@
     "responsePlaceholder": "Edit the response content..."
   },
   "downloadModal": {
-      "title": "Download from Community Repository",
+      "title": "Download Character from Community Repository",
       "loading": "Loading...",
-      "fetchError": "Failed to fetch character list",
+      "fetchError": "Unable to fetch character list",
       "downloadFailed": "Download failed",
       "importFailed": "Import failed",
       "importing": "Importing...",
       "downloadAndImport": "Download and Import",
-      "by": "By",
-      "unknownAuthor": "Unknown Author"
+      "by": "By:",
+      "unknownAuthor": "Anonymous"
+  },
+  "creatorInput": {
+    "title": "Creator Studio",
+    "subtitle": "Start creating epic stories",
+    "placeholder": "Enter your creative ideas...",
+    "sendMessage": "Send message",
+    "enterToSend": "Press Enter to send, Shift + Enter for new line",
+    "characterCount": "{count}/1000",
+    "exampleStories": "Survival, Harry Potter, Lord of the Rings - any story at your will"
   },
   "tour": {
     "welcome": "Welcome to Narratium",

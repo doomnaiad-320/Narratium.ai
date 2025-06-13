@@ -345,85 +345,6 @@ export default function CharacterPage() {
     }
   };
 
-  const handleStreamResponse = async (response: Response, nodeId: string) => {
-    if (!response.body) {
-      throw new Error("Response body is null");
-    }
-
-    const reader = response.body.getReader();
-    const decoder = new TextDecoder();
-    let buffer = "";
-    let formattedContent = "";
-    let receivedNextPrompts: string[] = [];
-
-    setMessages(prev => [...prev, { id: nodeId, role: "assistant", content: "", timestamp: new Date().toISOString() }]);
-
-    try {
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        
-        if (typeof value === "string") {
-          buffer += value;
-        } else if (value) {
-          try {
-            buffer += decoder.decode(value, { stream: true });
-          } catch (decodeError) {
-            console.error("Error decoding binary chunk:", decodeError);
-          }
-        }
-        
-        const lines = buffer.split("\n");
-        buffer = lines.pop() || "";
-        for (const line of lines) {
-          if (!line.trim()) continue;
-          
-          try {
-            const data = JSON.parse(line);
-            
-            switch (data.type) {
-            case "chunk":
-              if (data.isRegexProcessed) {
-                formattedContent = data.content;
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = data.content;
-                  return newMessages;
-                });
-              } else {
-                formattedContent += data.content;
-                const processedContent = formattedContent;
-                setMessages(prev => {
-                  const newMessages = [...prev];
-                  newMessages[newMessages.length - 1].content = processedContent;
-                  return newMessages;
-                });
-              }
-              break;
-                
-            case "complete":
-              if (data.parsedContent?.nextPrompts) {
-                receivedNextPrompts = data.parsedContent.nextPrompts;
-                setSuggestedInputs(receivedNextPrompts);
-              }
-              break;
-                
-            case "error":
-              throw new Error(data.message || "Character response failed");
-            }
-          } catch (e) {
-            console.error("Error parsing chunk:", e, line);
-          }
-        }
-      }
-
-      return { formattedContent, nextPrompts: receivedNextPrompts };
-    } catch (error) {
-      console.error("Error reading stream:", error);
-      throw error;
-    }
-  };
-
   const handleSendMessage = async (message: string) => {
     if (!character || isSending) return;
 
@@ -526,10 +447,6 @@ export default function CharacterPage() {
     };
   }, []);
 
-  const handleColorUpdate = async () => {
-    await fetchLatestDialogue();
-  };
-
   if (isLoading && !character) {
     return (
       <div className="flex justify-center items-center h-full fantasy-bg">
@@ -627,7 +544,7 @@ export default function CharacterPage() {
   };
 
   return (
-    <div className="flex h-full relative fantasy-bg overflow-hidden" style={{ 
+    <div className="flex h-full relative fantasy-bg overflow-hidden " style={{ 
       left: "var(--app-sidebar-width, 0)",
     }}>
       <CharacterSidebar
@@ -695,7 +612,6 @@ export default function CharacterPage() {
           />
         )}
       </div>
-
       <UserTour
         steps={currentTourSteps}
         isVisible={isTourVisible}

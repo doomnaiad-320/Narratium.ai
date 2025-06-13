@@ -264,7 +264,7 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
                 <div className="relative group mt-1">
                   <div className="absolute inset-0 bg-gradient-to-br from-amber-500/5 to-transparent rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                   {!isOpen ? (
-                    <Link href="/creator-area" className={"menu-item flex justify-center p-2 rounded-md cursor-pointer hover:bg-[#252525] transition-all duration-300"}>
+                    <Link href="/creator-input" className={"menu-item flex justify-center p-2 rounded-md cursor-pointer hover:bg-[#252525] transition-all duration-300"}>
                       <div className={"flex items-center justify-center text-[#f4e8c1] bg-[#1c1c1c] rounded-lg border border-[#333333] shadow-inner transition-all duration-300 group-hover:border-[#444444] hover:text-amber-400 hover:border-[#444444] hover:shadow-[0_0_8px_rgba(251,146,60,0.4)] w-8 h-8"}>
                         <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300">
                           <path d="M9 18h6" />
@@ -277,7 +277,7 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
                       </div>
                     </Link>
                   ) : (
-                    <Link href="/creator-area" className="focus:outline-none group relative overflow-hidden rounded-md w-full transition-all duration-300">
+                    <Link href="/creator-input" className="focus:outline-none group relative overflow-hidden rounded-md w-full transition-all duration-300">
                       <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                       <div className="relative flex items-center p-2 w-full transition-all duration-300 z-10">
                         <div className="absolute inset-0 w-full h-full bg-[#333] opacity-0 group-hover:opacity-10 transition-opacity duration-300"></div>

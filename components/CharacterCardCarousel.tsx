@@ -1,3 +1,27 @@
+/**
+ * Character Card Carousel Component
+ * 
+ * This component provides a 3D carousel display for character cards with the following features:
+ * - 3D circular carousel layout with perspective
+ * - Smooth rotation animations
+ * - Dynamic card scaling and opacity based on position
+ * - Interactive navigation controls
+ * - Card tilt effect with glare
+ * - Quick action buttons for chat, edit, and delete
+ * 
+ * The component handles:
+ * - 3D carousel rendering and layout
+ * - Rotation animations and transitions
+ * - Card positioning and perspective
+ * - Navigation controls
+ * - Responsive design adaptation
+ * 
+ * Dependencies:
+ * - framer-motion: For animations
+ * - useLanguage: For internationalization
+ * - CharacterAvatarBackground: For avatar display
+ */
+
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -6,6 +30,9 @@ import { useLanguage } from "@/app/i18n";
 import { CharacterAvatarBackground } from "@/components/CharacterAvatarBackground";
 import { trackButtonClick } from "@/utils/google-analytics";
 
+/**
+ * Interface definitions for the component's data structures
+ */
 interface Character {
   id: string;
   name: string;
@@ -23,6 +50,12 @@ interface CharacterCardCarouselProps {
   onDeleteClick: (characterId: string) => void;
 }
 
+/**
+ * Main carousel component for displaying character cards in a 3D circular layout
+ * 
+ * @param {CharacterCardCarouselProps} props - Component props
+ * @returns {JSX.Element} The rendered 3D carousel of character cards
+ */
 const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
   characters,
   onEditClick,
@@ -32,10 +65,15 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
   const [currentCenterIndex, setCurrentCenterIndex] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
 
+  // Calculate carousel parameters based on number of cards
   const cardCount = Math.min(characters.length, 8);
   const angleStep = cardCount > 0 ? 360 / cardCount : 120;
   const translateZDistance = cardCount <= 3 ? 30 : Math.max(25, 30 - (cardCount - 3) * 2);
 
+  /**
+   * Handle carousel rotation to the left
+   * Prevents multiple rotations during animation
+   */
   const handleRotateLeft = () => {
     if (isAnimating) return;
     setIsAnimating(true);
@@ -43,6 +81,10 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
     setTimeout(() => setIsAnimating(false), 800);
   };
 
+  /**
+   * Handle carousel rotation to the right
+   * Prevents multiple rotations during animation
+   */
   const handleRotateRight = () => {
     if (isAnimating) return;
     setIsAnimating(true);
@@ -52,7 +94,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
 
   return (
     <div className="relative w-full h-[70vh] max-h-[600px] my-12 pt-40 flex items-center justify-center" style={{ perspective: "1500px" }}>
-
+      {/* 3D carousel container */}
       <div 
         className="w-full h-full absolute transform-style-preserve-3d"
         style={{
@@ -62,6 +104,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
         }}
       >
         {characters.slice(0, cardCount).map((character, index) => {
+          // Calculate card position and visual properties
           const relativePosition = (index - currentCenterIndex + cardCount) % cardCount;
           const rotateY = relativePosition * angleStep;
 
@@ -69,6 +112,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
           const isBackface = rotateY > 90 && rotateY < 270;
           const isSideface = !isCentered && !isBackface;
 
+          // Determine card appearance based on position
           let opacity, filter, boxShadow, scale;
           if (isCentered) {
             opacity = 1;
@@ -107,7 +151,9 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
                 transition: isAnimating ? "all 0.8s cubic-bezier(0.77, 0, 0.175, 1)" : "opacity 0.3s ease, filter 0.3s ease, box-shadow 0.3s ease",
               }}
             >
+              {/* Character card content */}
               <div className="relative session-card h-full w-full transition-all duration-300 overflow-hidden rounded">
+                {/* Action buttons */}
                 <div className="absolute top-2 right-2 flex space-x-1 z-10">
                   <Link
                     href={`/character?id=${character.id}`}
@@ -152,6 +198,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
                   href={`/character?id=${character.id}`}
                   className="block h-full flex flex-col"
                 >
+                  {/* Character avatar */}
                   <div className="relative w-full overflow-hidden rounded aspect-[4/5]">
                     {character.avatar_path ? (
                       <CharacterAvatarBackground avatarPath={character.avatar_path} />
@@ -164,6 +211,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
                     )}
                   </div>
                 
+                  {/* Character info */}
                   <div className="p-4 relative">
                     <h2 className={`text-lg text-[#eae6db] line-clamp-1 magical-text ${serifFontClass}`}>{character.name}</h2>
                     <div className={`text-xs text-[#a18d6f] mt-2 italic ${fontClass}`}>
@@ -171,6 +219,7 @@ const CharacterCardCarousel: React.FC<CharacterCardCarouselProps> = ({
                       <span className="line-clamp-2">{character.personality}</span>
                     </div>
 
+                    {/* Navigation controls for centered card */}
                     {isCentered && cardCount > 1 && (
                       <div className="absolute bottom-2 left-1/2 transform -translate-x-1/2 flex space-x-2 z-30">
                         <button

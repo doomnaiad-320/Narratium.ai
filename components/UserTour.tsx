@@ -22,7 +22,7 @@ interface UserTourProps {
 export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserTourProps) {
   const [currentStep, setCurrentStep] = useState(0);
   const [targetRect, setTargetRect] = useState<DOMRect | null>(null);
-  const { t, fontClass, setLanguage, language } = useLanguage();
+  const { t, serifFontClass, setLanguage, language } = useLanguage();
 
   useEffect(() => {
     if (currentStep > 0 && steps[0]?.isLanguageSelection) {
@@ -91,18 +91,21 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
       }
     };
 
-    const delay = steps[currentStep].target === "body" ? 1000 : 300;
+    const delay = steps[currentStep].target === "body" ? 100 : 50;
 
-    if (!targetRect) {
-      setTimeout(updateTargetPosition, delay);
-    } else {
-      updateTargetPosition();
-    }
+    const rafId = requestAnimationFrame(() => {
+      if (!targetRect) {
+        setTimeout(updateTargetPosition, delay);
+      } else {
+        updateTargetPosition();
+      }
+    });
 
     window.addEventListener("resize", updateTargetPosition);
 
     return () => {
       window.removeEventListener("resize", updateTargetPosition);
+      cancelAnimationFrame(rafId);
     };
   }, [currentStep, steps, isVisible]);
 
@@ -264,10 +267,10 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
         }}
       >
         <div className="mb-4">
-          <h3 className={`text-lg font-semibold text-[#f4e8c1] mb-2 ${fontClass}`}>
+          <h3 className={`text-lg font-semibold text-[#f4e8c1] mb-2 ${serifFontClass}`}>
             {currentStepData.title}
           </h3>
-          <p className={`text-[#c0a480] text-sm leading-relaxed ${fontClass}`}>
+          <p className={`text-[#c0a480] text-sm leading-relaxed ${serifFontClass}`}>
             {currentStepData.content}
           </p>
         </div>
@@ -284,7 +287,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
               />
             ))}
           </div>
-          <span className={`text-xs text-[#a18d6f] ${fontClass}`}>
+          <span className={`text-xs text-[#a18d6f] ${serifFontClass}`}>
             {currentStep + 1} / {steps.length}
           </span>
         </div>
@@ -294,7 +297,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
             {currentStep > 0 && (
               <button
                 onClick={prevStep}
-                className={`px-3 py-1.5 text-sm bg-[#1a1816] text-[#c0a480] border border-[#534741] rounded hover:bg-[#252220] hover:text-[#f4e8c1] transition-colors ${fontClass}`}
+                className={`px-3 py-1.5 text-sm bg-[#1a1816] text-[#c0a480] border border-[#534741] rounded hover:bg-[#252220] hover:text-[#f4e8c1] transition-colors ${serifFontClass}`}
               >
                 {t("tour.previous") || "上一步"}
               </button>
@@ -302,7 +305,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
             {currentStepData.allowSkip !== false && (
               <button
                 onClick={skipTour}
-                className={`px-3 py-1.5 text-sm text-[#a18d6f] hover:text-[#c0a480] transition-colors ${fontClass}`}
+                className={`px-3 py-1.5 text-sm text-[#a18d6f] hover:text-[#c0a480] transition-colors ${serifFontClass}`}
               >
                 {t("tour.skip") || "跳过"}
               </button>
@@ -319,7 +322,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
                   localStorage.setItem("language", "zh");
                   nextStep();
                 }}
-                className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${fontClass}`}
+                className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${serifFontClass}`}
               >
                 中文
               </button>
@@ -330,7 +333,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
                   localStorage.setItem("language", "en");
                   nextStep();
                 }}
-                className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${fontClass}`}
+                className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${serifFontClass}`}
               >
                 English
               </button>
@@ -338,7 +341,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
           ) : (
             <button
               onClick={nextStep}
-              className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${fontClass}`}
+              className={`px-4 py-1.5 text-sm bg-[#f9c86d] text-[#1a1816] rounded hover:bg-[#c0a480] transition-colors font-medium ${serifFontClass}`}
             >
               {currentStep === steps.length - 1 
                 ? (t("tour.finish") || "完成") 

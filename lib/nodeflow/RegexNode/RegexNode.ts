@@ -44,8 +44,6 @@ export class RegexNode extends NodeBase {
       .replace(/\s*<\/?outputFormat>\s*/g, "")
       .trim();
 
-    console.log("cleanedResponse", cleanedResponse);
-
     const nextPromptsMatch = cleanedResponse.match(/<next_prompts>([\s\S]*?)<\/next_prompts>/);
     if (nextPromptsMatch) {
       nextPrompts = nextPromptsMatch[1]
@@ -65,8 +63,6 @@ export class RegexNode extends NodeBase {
       .replace(/\n*\s*<next_prompts>[\s\S]*?<\/next_prompts>\s*\n*/g, "")
       .replace(/\n*\s*<events>[\s\S]*?<\/events>\s*\n*/g, "")
       .trim();
-
-    console.log("mainContent", mainContent);
 
     const processedResult = await this.executeTool(
       "processRegex",

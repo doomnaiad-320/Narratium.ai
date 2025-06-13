@@ -1,3 +1,27 @@
+/**
+ * Character Card Grid Component
+ * 
+ * This component provides a grid layout display for character cards with the following features:
+ * - Responsive grid layout (1-3 columns based on screen size)
+ * - Animated card appearance with staggered loading
+ * - Interactive card tilt effect with glare
+ * - Quick action buttons for chat, edit, and delete
+ * - Avatar display with fallback
+ * - Character name and personality preview
+ * 
+ * The component handles:
+ * - Character card rendering and layout
+ * - Interactive animations and effects
+ * - Action button event handling
+ * - Responsive design adaptation
+ * 
+ * Dependencies:
+ * - framer-motion: For animations
+ * - react-parallax-tilt: For card tilt effect
+ * - CharacterAvatarBackground: For avatar display
+ * - useLanguage: For internationalization
+ */
+
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -6,6 +30,9 @@ import { useLanguage } from "@/app/i18n";
 import { CharacterAvatarBackground } from "@/components/CharacterAvatarBackground";
 import { trackButtonClick } from "@/utils/google-analytics";
 
+/**
+ * Interface definitions for the component's data structures
+ */
 interface Character {
   id: string;
   name: string;
@@ -23,6 +50,12 @@ interface CharacterCardGridProps {
   onDeleteClick: (characterId: string) => void;
 }
 
+/**
+ * Main grid component for displaying character cards
+ * 
+ * @param {CharacterCardGridProps} props - Component props
+ * @returns {JSX.Element} The rendered grid of character cards
+ */
 const CharacterCardGrid: React.FC<CharacterCardGridProps> = ({
   characters,
   onEditClick,
@@ -58,6 +91,7 @@ const CharacterCardGrid: React.FC<CharacterCardGridProps> = ({
             className="h-full"
           >
             <div className="relative session-card h-full transition-all duration-300">
+              {/* Action buttons for each card */}
               <div className="absolute top-2 right-2 flex space-x-1 z-10">
                 <Link
                   href={`/character?id=${character.id}`}
@@ -98,6 +132,7 @@ const CharacterCardGrid: React.FC<CharacterCardGridProps> = ({
                 </button>
               </div>
             
+              {/* Character card content */}
               <Link
                 href={`/character?id=${character.id}`}
                 className="block h-full flex flex-col"

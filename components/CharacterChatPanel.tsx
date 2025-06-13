@@ -20,7 +20,7 @@
 
 "use client";
 
-import { useEffect, useRef, useState, useCallback } from "react";
+import { useEffect, useRef, useState } from "react";
 import ChatHtmlBubble from "@/components/ChatHtmlBubble";
 import { CharacterAvatarBackground } from "@/components/CharacterAvatarBackground";
 import { trackButtonClick, trackFormSubmit } from "@/utils/google-analytics";
@@ -91,12 +91,18 @@ export default function CharacterChatPanel({
     const savedStreaming = localStorage.getItem("streamingEnabled");
     if (savedStreaming !== null) {
       const isStreamingEnabled = savedStreaming === "true";
-      setActiveModes(prev => ({
-        ...prev,
-        streaming: isStreamingEnabled,
-      }));
-      if (isStreamingEnabled) {
-        setStreamingTarget(messages.length + 1);
+      if (isStreamingEnabled && messages.length > 0) {
+        setActiveModes(prev => ({
+          ...prev,
+          streaming: true,
+        }));
+        setStreamingTarget(messages.length);
+      } else {
+        setActiveModes(prev => ({
+          ...prev,
+          streaming: false,
+        }));
+        setStreamingTarget(-1);
       }
     }
   }, []);
@@ -210,7 +216,7 @@ export default function CharacterChatPanel({
                                 return { ...prev, streaming: newStreaming };
                               });
                               const newStreaming = !activeModes.streaming;
-                              setStreamingTarget(newStreaming ? messages.length + 1 : -1);
+                              setStreamingTarget(newStreaming ? messages.length: -1);
                               localStorage.setItem("streamingEnabled", String(newStreaming));
                               trackButtonClick("toggle_streaming", "流式输出切换");
                             }}
