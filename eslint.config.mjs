@@ -5,7 +5,7 @@ import next from "@next/eslint-plugin-next";
 export default [
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
-    ignores: ["node_modules", ".next", "dist"],
+    ignores: ["node_modules", ".next", "dist", "React_app"],
     languageOptions: {
       parser: tsparser,
       parserOptions: {
