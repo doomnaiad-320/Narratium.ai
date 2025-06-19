@@ -18,9 +18,11 @@ import ReactFlow, {
   ReactFlowInstance,
 } from "reactflow";
 import "reactflow/dist/style.css";
+import ELK from "elkjs/lib/elk.bundled.js";
 import { trackButtonClick } from "@/utils/google-analytics";
 import { switchDialogueBranch } from "@/function/dialogue/truncate";
 import { getCharacterDialogue } from "@/function/dialogue/info";
+import { getIncrementalDialogue } from "@/function/dialogue/incremental-info";
 import { editDialaogueNodeContent } from "@/function/dialogue/edit";
 
 interface DialogueTreeModalProps {
@@ -28,6 +30,28 @@ interface DialogueTreeModalProps {
   onClose: () => void;
   characterId?: string;
   onDialogueEdit?: () => void;
+}
+
+// ELK layout interfaces
+interface ELKNode {
+  id: string;
+  width?: number;
+  height?: number;
+  x?: number;
+  y?: number;
+  children?: ELKNode[];
+}
+
+interface ELKEdge {
+  id: string;
+  sources: string[];
+  targets: string[];
+}
+
+interface ELKGraph {
+  id: string;
+  children: ELKNode[];
+  edges: ELKEdge[];
 }
 
 interface DialogueNode extends Node {
@@ -282,6 +306,10 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
   const [isSaving, setIsSaving] = useState(false);
   const [dataLoaded, setDataLoaded] = useState(false);
   const [isJumpingToNode, setIsJumpingToNode] = useState(false);
+  const [layoutMethod, setLayoutMethod] = useState<"elk" | "grid">("elk");
+  const [userAdjustedPositions, setUserAdjustedPositions] = useState<Record<string, { x: number; y: number }>>({});
+  const [lastKnownNodeIds, setLastKnownNodeIds] = useState<Set<string>>(new Set());
+  const [lastUpdateTime, setLastUpdateTime] = useState<string>("");
   const flowRef = useRef(null);
   const nodesRef = useRef<Node[]>([]);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -294,10 +322,293 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
   }), []);
 
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
+  const elk = new ELK();
+  
+  // Fallback grid layout function
+  const calculateFallbackLayout = useCallback((nodes: DialogueNode[]) => {
+    const nodeCount = nodes.length;
+    const columns = nodeCount <= 3 ? 1 : Math.max(1, Math.round(Math.sqrt(nodeCount)));
+    const nodeWidth = 280;
+    const nodeHeight = 140;
+    
+    const baseHorizontalGap = 500;
+    const baseVerticalGap = 250;
+    const minHorizontalGap = 200;
+    const minVerticalGap = 150;
+    
+    const horizontalGap = Math.max(
+      minHorizontalGap,
+      baseHorizontalGap * Math.pow(0.9, nodeCount),
+    );
+    
+    const verticalGap = Math.max(
+      minVerticalGap,
+      baseVerticalGap * Math.pow(0.95, nodeCount),
+    );
+    
+    const rows = Math.ceil(nodeCount / columns);
+    const gridWidth = (columns * nodeWidth) + ((columns - 1) * horizontalGap);
+    const gridHeight = (rows * nodeHeight) + ((rows - 1) * verticalGap);
+
+    return nodes.map((node, index) => {
+      const col = index % columns;
+      const row = Math.floor(index / columns);
+
+      const xPos = (col * (nodeWidth + horizontalGap)) - (gridWidth / 2) + (nodeWidth / 2);
+      const yPos = (row * (nodeHeight + verticalGap)) - (gridHeight / 2) + (nodeHeight / 2);
+
+      return {
+        ...node,
+        position: { x: xPos, y: yPos },
+      };
+    });
+  }, []);
+  
+  // ELK layout calculation function
+  const calculateELKLayout = useCallback(async (nodes: any[], edges: any[]) => {
+    const elkGraph: ELKGraph = {
+      id: "root",
+      children: nodes.map(node => ({
+        id: node.id,
+        width: 280, // Set node width for ELK
+        height: 140, // Set node height for ELK
+      })),
+      edges: edges.map(edge => ({
+        id: edge.id,
+        sources: [edge.source],
+        targets: [edge.target],
+      })),
+    };
+
+    // ELK layout options optimized for dialogue trees
+    const layoutOptions = {
+      "elk.algorithm": "layered", // Use layered layout algorithm for tree-like structures
+      "elk.direction": "DOWN", // Top-to-bottom layout
+      "elk.spacing.nodeNode": "80", // Horizontal spacing between nodes
+      "elk.layered.spacing.nodeNodeBetweenLayers": "120", // Vertical spacing between layers
+      "elk.spacing.edgeNode": "20", // Spacing between edges and nodes
+      "elk.spacing.edgeEdge": "15", // Spacing between edges
+      "elk.layered.crossingMinimization.strategy": "LAYER_SWEEP", // Better edge crossing minimization
+      "elk.layered.nodePlacement.strategy": "NETWORK_SIMPLEX", // Better node placement
+      "elk.layered.cycleBreaking.strategy": "GREEDY", // Handle cycles in the graph
+      "elk.alignment": "CENTER", // Center align nodes
+      "elk.spacing.portPort": "10",
+      "elk.portConstraints": "FIXED_ORDER",
+      "elk.hierarchyHandling": "INCLUDE_CHILDREN",
+      "elk.separateConnectedComponents": "true", // Handle disconnected parts separately
+      "elk.layered.thoroughness": "10", // Higher quality layout at cost of performance
+      "elk.layered.unnecessaryBendpoints": "true", // Remove unnecessary bendpoints
+      "elk.edgeRouting": "ORTHOGONAL", // Better edge routing for dialogue trees
+      "elk.aspectRatio": "1.6", // Preferred aspect ratio for the layout
+    };
+
+    try {
+      const layout = await elk.layout(elkGraph, { layoutOptions });
+      return layout;
+    } catch (error) {
+      console.error("ELK layout calculation failed:", error);
+      return null;
+    }
+  }, [elk]);
+
+  // Progressive layout - use full layout but preserve user positions
+  const calculateProgressiveLayout = useCallback(async (
+    allNodes: DialogueNode[], 
+    allEdges: Edge[], 
+    existingNodes: DialogueNode[],
+  ) => {
+    const existingNodeIds = new Set(existingNodes.map(n => n.id));
+    const newNodes = allNodes.filter(node => !existingNodeIds.has(node.id));
+    
+    if (newNodes.length === 0) {
+      // No new nodes, just apply user positions to existing nodes
+      return allNodes.map(node => {
+        const userPos = userAdjustedPositions[node.id];
+        return userPos ? { ...node, position: userPos } : node;
+      });
+    }
+
+    try {
+      // Use full ELK layout for all nodes to get optimal layout
+      const elkLayout = await calculateELKLayout(allNodes, allEdges);
+
+      if (elkLayout?.children?.length) {
+        console.log("ELK layout successful for progressive layout");
+        
+        // Apply layout but preserve user-adjusted positions
+        const layoutedNodes = allNodes.map(node => {
+          const userPos = userAdjustedPositions[node.id];
+          
+          // If user has manually adjusted this node, keep user position
+          if (userPos) {
+            return { ...node, position: userPos };
+          }
+          
+          // Otherwise, use ELK calculated position
+          const elkNode = elkLayout.children?.find(child => child.id === node.id);
+          if (elkNode && typeof elkNode.x === "number" && typeof elkNode.y === "number") {
+            return {
+              ...node,
+              position: { x: elkNode.x, y: elkNode.y },
+            };
+          }
+          
+          return node;
+        });
+        
+        return layoutedNodes;
+      } else {
+        // Fallback to grid layout
+        return calculateFallbackLayout(allNodes);
+      }
+    } catch (error) {
+      console.error("Error in progressive layout:", error);
+      // Fallback to grid layout
+      return calculateFallbackLayout(allNodes);
+    }
+  }, [calculateELKLayout, userAdjustedPositions, calculateFallbackLayout]);
+
+  // Reset layout function
+  const resetLayout = useCallback(async () => {
+    if (!characterId || nodes.length === 0) return;
+    
+    try {
+      // Clear user adjusted positions
+      setUserAdjustedPositions({});
+      
+      // Apply fresh ELK layout to all nodes (same as initial load)
+      const elkLayout = await calculateELKLayout(nodes, edges);
+      
+      if (elkLayout?.children?.length) {
+        console.log("ELK layout successful for reset");
+        const layoutedNodes = nodes.map(node => {
+          const elkNode = elkLayout.children?.find(child => child.id === node.id);
+          if (elkNode && typeof elkNode.x === "number" && typeof elkNode.y === "number") {
+            return {
+              ...node,
+              position: { x: elkNode.x, y: elkNode.y },
+            };
+          }
+          return node;
+        });
+        
+        setNodes(layoutedNodes);
+        nodesRef.current = layoutedNodes;
+      } else {
+        // Fallback to grid layout
+        const fallbackNodes = calculateFallbackLayout(nodes);
+        setNodes(fallbackNodes);
+        nodesRef.current = fallbackNodes;
+      }
+      
+      console.log("Layout reset successfully");
+    } catch (error) {
+      console.error("Error resetting layout:", error);
+      // Fallback to grid layout on error
+      const fallbackNodes = calculateFallbackLayout(nodes);
+      setNodes(fallbackNodes);
+      nodesRef.current = fallbackNodes;
+    }
+  }, [characterId, nodes, edges, calculateELKLayout, calculateFallbackLayout]);
+
+  // Update current path colors without affecting layout
+  const updateCurrentPathColors = useCallback(async (characterId: string) => {
+    try {
+      const response = await getCharacterDialogue(characterId);
+      
+      if (!response.success || !response.dialogue?.tree?.nodes) {
+        return;
+      }
+
+      const dialogue = response.dialogue;
+      const allNodes = dialogue.tree.nodes || [];
+      const currentNodeId = dialogue.tree.currentNodeId || "root";
+      
+      // Calculate current path
+      const currentPathNodeIds: string[] = [];
+      let tempNodeId = currentNodeId;
+      
+      while (tempNodeId !== "root") {
+        currentPathNodeIds.push(tempNodeId);
+        const node = allNodes.find((n: any) => n.node_id === tempNodeId);
+        if (!node) break;
+        tempNodeId = node.parent_node_id;
+      }
+
+      // Update only the isCurrentPath data property of existing nodes
+      setNodes(prevNodes => 
+        prevNodes.map(node => ({
+          ...node,
+          data: {
+            ...node.data,
+            isCurrentPath: currentPathNodeIds.includes(node.id),
+          },
+        })),
+      );
+
+      // Update edges colors without changing positions
+      setEdges(prevEdges => 
+        prevEdges.map(edge => {
+          const isCurrentPathEdge = currentPathNodeIds.includes(edge.source) && currentPathNodeIds.includes(edge.target);
+          const isRootSource = edge.source === "root";
+          
+          let edgeStroke, edgeLabelStroke, edgeLabelFill, edgeClass;
+          
+          if (isRootSource) {
+            edgeStroke = "#a78bfa";
+            edgeLabelStroke = "#7c3aed";
+            edgeLabelFill = "#ddd6fe";
+            edgeClass = "root-source";
+          } else if (isCurrentPathEdge) {
+            edgeStroke = "#ef4444";
+            edgeLabelStroke = "#991b1b";
+            edgeLabelFill = "#fecaca";
+            edgeClass = "current-path";
+          } else {
+            edgeStroke = "#8a7a64";
+            edgeLabelStroke = "#3a3633";
+            edgeLabelFill = "#a8a095";
+            edgeClass = "other-path";
+          }
+
+          return {
+            ...edge,
+            style: { 
+              stroke: edgeStroke, 
+              strokeWidth: isCurrentPathEdge || isRootSource ? 3 : 2, 
+            },
+            labelBgStyle: { 
+              fill: "#1e1c1b", 
+              fillOpacity: 0.8, 
+              stroke: edgeLabelStroke, 
+            },
+            labelStyle: { 
+              fill: edgeLabelFill, 
+              fontFamily: "inherit", 
+              fontSize: 12, 
+            },
+            className: edgeClass,
+          };
+        }),
+      );
+
+      console.log("Updated current path colors without affecting layout");
+    } catch (error) {
+      console.error("Error updating current path colors:", error);
+    }
+  }, []);
   
   const handleFlowInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstanceRef.current = instance;
     adjustViewport(instance);
+  }, []);
+
+  // Handle node drag end to save user positions
+  const handleNodeDragStop = useCallback((_: any, node: Node) => {
+    setUserAdjustedPositions(prev => ({
+      ...prev,
+      [node.id]: { x: node.position.x, y: node.position.y },
+    }));
   }, []);
   
   const adjustViewport = useCallback((instance: ReactFlowInstance) => {
@@ -346,8 +657,8 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
         await onDialogueEdit();
       }
       
-      // Refresh dialogue data to update current path colors
-      await fetchDialogueData(characterId);
+      // Only update node colors and current path, don't trigger layout recalculation
+      await updateCurrentPathColors(characterId);
       
       return true;
     } catch (error) {
@@ -372,11 +683,16 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
 
   useEffect(() => {
     if (isOpen && characterId) {
-      fetchDialogueData(characterId);
+      // Use incremental fetch if we have existing nodes, otherwise full fetch
+      if (lastKnownNodeIds.size > 0) {
+        fetchIncrementalDialogueData(characterId);
+      } else {
+        fetchDialogueData(characterId);
+      }
     } else {
       setDataLoaded(false);
     }
-  }, [isOpen, characterId]);
+  }, [isOpen, characterId, lastKnownNodeIds.size]);
 
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
@@ -410,6 +726,36 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     };
   }, [isEditModalOpen]);
 
+  // Fetch incremental dialogue data (only new nodes)
+  const fetchIncrementalDialogueData = async (characterId: string) => {
+    if (!characterId) {
+      return;
+    }
+
+    try {
+      const incrementalResponse = await getIncrementalDialogue({
+        characterId,
+        lastKnownNodeIds: Array.from(lastKnownNodeIds),
+        lastUpdateTime: lastUpdateTime || undefined,
+      });
+
+      if (!incrementalResponse.success || !incrementalResponse.hasNewData) {
+        console.log("No new dialogue data available");
+        setDataLoaded(true);
+        return;
+      }
+
+      // Process incremental data using existing logic
+      await processIncrementalNodes(incrementalResponse, characterId);
+      
+    } catch (error) {
+      console.error("Error fetching incremental dialogue data:", error);
+      // Fallback to full fetch if incremental fails
+      await fetchDialogueData(characterId);
+    }
+  };
+
+  // Full dialogue data fetch (initial load)
   const fetchDialogueData = async (characterId: string) => {
     if (!characterId) {
       return;
@@ -460,40 +806,10 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
         nodeMap[node.node_id] = node;
       });
       
-      const calculateOptimalLayout = (nodeCount: number) => {
-        const columns = nodeCount <= 3 ? 1 : Math.max(1, Math.round(Math.sqrt(nodeCount)));
-        
-        const baseHorizontalGap = 500;
-        const baseVerticalGap = 250;
-        const minHorizontalGap = 200;
-        const minVerticalGap = 150;
-        
-        const horizontalGap = Math.max(
-          minHorizontalGap,
-          baseHorizontalGap * Math.pow(0.9, nodeCount),
-        );
-        
-        const verticalGap = Math.max(
-          minVerticalGap,
-          baseVerticalGap * Math.pow(0.95, nodeCount),
-        );
-        
-        return { columns, horizontalGap, verticalGap };
-      };
+      // Create initial nodes with temporary positions
+      const tempNodes: DialogueNode[] = [];
       
-      const { columns, horizontalGap, verticalGap } = calculateOptimalLayout(allNodes.length);
-      
-      const rows = Math.ceil(allNodes.length / columns);
-      const gridWidth = (columns * nodeWidth) + ((columns - 1) * horizontalGap);
-      const gridHeight = (rows * nodeHeight) + ((rows - 1) * verticalGap);
-
-      allNodes.forEach((node: any, index: number) => {
-        const col = index % columns;
-        const row = Math.floor(index / columns);
-
-        const xPos = (col * (nodeWidth + horizontalGap)) - (gridWidth / 2) + (nodeWidth / 2);
-        const yPos = (row * (nodeHeight + verticalGap)) - (gridHeight / 2) + (nodeHeight / 2);
-
+      allNodes.forEach((node: any) => {
         const nodeId = node.node_id;
         const isCurrentPath = currentPathNodeIds.includes(nodeId);
         
@@ -519,7 +835,7 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
           label = t("dialogue.systemMessage");
         }
         
-        newNodes.push({
+        tempNodes.push({
           id: nodeId,
           type: "dialogueNode",
           data: {
@@ -533,7 +849,7 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
             isCurrentPath: isCurrentPath,
             characterId: characterId,
           },
-          position: { x: xPos, y: yPos },
+          position: { x: 0, y: 0 }, // Temporary position
           style: {
             width: nodeWidth,
             boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1)",
@@ -541,12 +857,251 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
         });
       });
 
+      // Create edges first (for ELK layout calculation)
+      const tempEdges: Edge[] = [];
+      
       allNodes.forEach((node: any) => {
         if (node.node_id && node.node_id !== "root") {
           const sourceId = node.parent_node_id;
           const targetId = node.node_id;
           
           if (nodeMap[sourceId] && nodeMap[targetId]) {
+            const isCurrentPathEdge = currentPathNodeIds.includes(sourceId) && currentPathNodeIds.includes(targetId);
+        
+            const isRootSource = sourceId === "root";
+            let edgeStroke, edgeLabelStroke, edgeLabelFill;
+            
+            if (isRootSource) {
+              edgeStroke = "#a78bfa";
+              edgeLabelStroke = "#7c3aed";
+              edgeLabelFill = "#ddd6fe";
+            } else if (isCurrentPathEdge) {
+              edgeStroke = "#ef4444";
+              edgeLabelStroke = "#991b1b";
+              edgeLabelFill = "#fecaca";
+            } else {
+              edgeStroke = "#8a7a64";
+              edgeLabelStroke = "#3a3633";
+              edgeLabelFill = "#a8a095";
+            }
+            
+            let edgeClass = "other-path";
+            if (isRootSource) {
+              edgeClass = "root-source";
+            } else if (isCurrentPathEdge) {
+              edgeClass = "current-path";
+            }
+
+            tempEdges.push({
+              id: `edge-${sourceId}-${targetId}`,
+              source: sourceId,
+              target: targetId,
+              label: node.user_input.match(/<input_message>([\s\S]*?)<\/input_message>/)?.[1].replace(/^[\s\n\r]*((<[^>]+>\s*)*)?(玩家输入指令|Player Input)[:：]\s*/i, "") || "",
+              labelBgPadding: [8, 4],
+              labelBgBorderRadius: 4,
+              labelBgStyle: { 
+                fill: "#1e1c1b", 
+                fillOpacity: 0.8, 
+                stroke: edgeLabelStroke, 
+              },
+              labelStyle: { 
+                fill: edgeLabelFill, 
+                fontFamily: "inherit", 
+                fontSize: 12, 
+              },
+              style: { 
+                stroke: edgeStroke, 
+                strokeWidth: isCurrentPathEdge || isRootSource ? 3 : 2, 
+              },
+              animated: false,
+              className: edgeClass,
+              type: "smoothstep",
+            });
+          }
+        }
+      });
+
+      // Determine whether to use progressive or full layout
+      try {
+        const currentNodeIds = new Set(tempNodes.map(n => n.id));
+        const hasNewNodes = !Array.from(currentNodeIds).every(id => lastKnownNodeIds.has(id));
+        
+        console.log("Layout calculation:", {
+          totalNodes: tempNodes.length,
+          newNodes: tempNodes.filter(n => !lastKnownNodeIds.has(n.id)).length,
+          hasNewNodes,
+          hasExistingNodes: nodesRef.current.length > 0,
+        });
+
+        let layoutedNodes;
+        
+        if (nodesRef.current.length > 0 && hasNewNodes) {
+          // Use progressive layout for incremental updates
+          layoutedNodes = await calculateProgressiveLayout(tempNodes, tempEdges, nodesRef.current);
+        } else {
+          // Use full ELK layout for initial load or reset (same as resetLayout)
+          const elkLayout = await calculateELKLayout(tempNodes, tempEdges);
+          
+          if (elkLayout?.children?.length) {
+            console.log("ELK layout successful for full layout");
+            layoutedNodes = tempNodes.map(node => {
+              const elkNode = elkLayout.children?.find(child => child.id === node.id);
+              if (elkNode && typeof elkNode.x === "number" && typeof elkNode.y === "number") {
+                return {
+                  ...node,
+                  position: { x: elkNode.x, y: elkNode.y },
+                };
+              }
+              return node;
+            });
+          } else {
+            // Fallback to grid layout
+            layoutedNodes = calculateFallbackLayout(tempNodes);
+          }
+        }
+        
+        setNodes(layoutedNodes);
+        nodesRef.current = layoutedNodes;
+        setLastKnownNodeIds(currentNodeIds);
+        setLayoutMethod("elk");
+        
+      } catch (error) {
+        console.error("Error in layout calculation:", error);
+        // Fallback to grid layout if layout fails
+        setLayoutMethod("grid");
+        const fallbackNodes = calculateFallbackLayout(tempNodes);
+        setNodes(fallbackNodes);
+        nodesRef.current = fallbackNodes;
+      }
+      
+      setEdges(tempEdges);
+
+      setDataLoaded(true);
+    } catch (error) {
+      console.error("Error fetching dialogue data:", error);
+      setDataLoaded(true);
+    }
+  };
+
+  // Process incremental nodes and integrate with existing nodes
+  const processIncrementalNodes = async (incrementalResponse: any, characterId: string) => {
+    try {
+      const { newNodes, updatedNodes, deletedNodeIds, currentNodeId } = incrementalResponse;
+      
+      if (newNodes.length === 0 && updatedNodes.length === 0 && deletedNodeIds.length === 0) {
+        return;
+      }
+
+      console.log("Processing incremental nodes:", {
+        newNodes: newNodes.length,
+        updatedNodes: updatedNodes.length,
+        deletedNodes: deletedNodeIds.length,
+        currentNodeId,
+      });
+
+      // Handle deleted nodes first
+      if (deletedNodeIds.length > 0) {
+        const deletedNodeIdsSet = new Set(deletedNodeIds);
+        
+        // Remove deleted nodes from current nodes
+        const filteredNodes = nodesRef.current.filter(node => !deletedNodeIdsSet.has(node.id));
+        
+        // Remove edges connected to deleted nodes
+        const filteredEdges = edges.filter(edge => 
+          !deletedNodeIdsSet.has(edge.source) && !deletedNodeIdsSet.has(edge.target),
+        );
+        
+        // Update state
+        setNodes(filteredNodes);
+        nodesRef.current = filteredNodes;
+        setEdges(filteredEdges);
+        
+        // Remove deleted nodes from user adjusted positions
+        setUserAdjustedPositions(prev => {
+          const updated = { ...prev };
+          deletedNodeIds.forEach((nodeId: string) => delete updated[nodeId]);
+          return updated;
+        });
+        
+        console.log("Removed deleted nodes:", deletedNodeIds);
+      }
+
+      // Get current path for highlighting
+      const currentPathNodeIds: string[] = [];
+      let tempNodeId = currentNodeId;
+      
+      const allExistingNodes = [...newNodes, ...updatedNodes];
+      while (tempNodeId !== "root") {
+        currentPathNodeIds.push(tempNodeId);
+        const node = allExistingNodes.find((n: any) => n.node_id === tempNodeId);
+        if (!node) break;
+        tempNodeId = node.parent_node_id;
+      }
+
+      // Create new React Flow nodes
+      const newReactFlowNodes: DialogueNode[] = [];
+      const newEdges: Edge[] = [];
+
+      // Process all nodes (new + updated)
+      const allNodes = [...newNodes, ...updatedNodes];
+      const nodeMap: Record<string, any> = {};
+      allNodes.forEach((node: any) => {
+        nodeMap[node.node_id] = node;
+      });
+
+      allNodes.forEach((node: any) => {
+        const nodeId = node.node_id;
+        const isCurrentPath = currentPathNodeIds.includes(nodeId);
+        
+        let label = "";
+        if (node.node_id === "root") {
+          label = "root";
+        } else if (node.parent_node_id === "root") {
+          const rootChildren = allNodes.filter((n: any) => n.parent_node_id === "root");
+          const rootChildIndex = rootChildren.findIndex((n: any) => n.node_id === node.node_id);
+          const rootChildrenCount = rootChildren.length;
+          
+          label = `${t("dialogue.startingPoint")}${rootChildrenCount - rootChildIndex}${rootChildrenCount > 1 ? `/${rootChildrenCount}` : ""}`;
+        } else if (node.assistant_response) {
+          if (node.parsed_content?.compressedContent) {
+            label = node.parsed_content.compressedContent;
+          } else {
+            const shortResponse = node.assistant_response.length > 30 
+              ? node.assistant_response.substring(0, 30) + "..." 
+              : node.assistant_response;
+            label = shortResponse;
+          }
+        } else {
+          label = t("dialogue.systemMessage");
+        }
+        
+        newReactFlowNodes.push({
+          id: nodeId,
+          type: "dialogueNode",
+          data: {
+            label: label,
+            fullContent: node.assistant_response || "",
+            userInput: (node.user_input.match(/<input_message>([\s\S]*?)<\/input_message>/)?.[1] || "").replace(/^[\s\n\r]*((<[^>]+>\s*)*)?(玩家输入指令|Player Input)[:：]\s*/i, ""),
+            assistantResponse: node.assistant_response || "",
+            parsedContent: node.parsed_content || {},
+            onEditClick: (id: string) => handleEditNode(id),
+            onJumpClick: (id: string) => handleJumpToNode(id),
+            isCurrentPath: isCurrentPath,
+            characterId: characterId,
+          },
+          position: { x: 0, y: 0 }, // Temporary position
+          style: {
+            width: 280,
+            boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 2px 4px -1px rgba(0, 0, 0, 0.1)",
+          },
+        });
+
+        // Create edges for new nodes
+        if (node.node_id && node.node_id !== "root") {
+          const sourceId = node.parent_node_id;
+          const targetId = node.node_id;
+          
+          if (nodeMap[sourceId] || nodes.some(n => n.id === sourceId)) {
             const isCurrentPathEdge = currentPathNodeIds.includes(sourceId) && currentPathNodeIds.includes(targetId);
             
             const isRootSource = sourceId === "root";
@@ -602,14 +1157,30 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
         }
       });
 
-      setNodes(newNodes);
-      setEdges(newEdges);
-      nodesRef.current = newNodes;
+      // Apply progressive layout to integrate new nodes
+      const layoutedNodes = await calculateProgressiveLayout(
+        [...nodesRef.current, ...newReactFlowNodes],
+        [...edges, ...newEdges],
+        nodesRef.current,
+      );
+      
+      setNodes(layoutedNodes);
+      nodesRef.current = layoutedNodes;
+      
+      // Update edges
+      setEdges(prev => [...prev, ...newEdges]);
+      
+      // Update tracking state
+      const currentNodeIds = new Set(allNodes.map((n: any) => n.node_id));
+      // Add new nodes and remove deleted nodes from tracking
+      const updatedKnownNodeIds = new Set([...lastKnownNodeIds, ...currentNodeIds]);
+      deletedNodeIds.forEach((nodeId: string) => updatedKnownNodeIds.delete(nodeId));
+      
+      setLastKnownNodeIds(updatedKnownNodeIds);
+      setLastUpdateTime(incrementalResponse.lastUpdateTime);
 
-      setDataLoaded(true);
     } catch (error) {
-      console.error("Error fetching dialogue data:", error);
-      setDataLoaded(true);
+      console.error("Error processing incremental nodes:", error);
     }
   };
 
@@ -744,6 +1315,7 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
             edges={edges}
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
+            onNodeDragStop={handleNodeDragStop}
             nodeTypes={nodeTypes}
             fitView
             fitViewOptions={{ padding: 0.2 }}
@@ -767,6 +1339,25 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
             <Background color="#534741" gap={16} size={1.5} />
             <Panel position="top-right" className="fantasy-bg border border-[#534741] p-3 rounded-md shadow-md">
               <div className="flex flex-col space-y-2">
+                {/* Layout Status */}
+                <div className="flex flex-col space-y-1 pb-2 border-b border-[#534741]">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center">
+                      <div className={`w-2 h-2 rounded-full mr-2 ${Object.keys(userAdjustedPositions).length > 0 ? "bg-blue-400" : "bg-gray-500"}`}></div>
+                      <span className={`text-[#d1a35c] text-xs ${fontClass}`}>
+                        {Object.keys(userAdjustedPositions).length} {t("dialogue.manualPositions")}
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => {trackButtonClick("DialogueTreeModal", "重置布局");resetLayout();}}
+                      className={`text-[#8a8a8a] hover:text-amber-400 transition-colors duration-300 text-xs ${fontClass} px-2 py-1 rounded hover:bg-[#2a2825]`}
+                      title={t("dialogue.resetLayout")}
+                    >
+                      {t("dialogue.resetLayout")}
+                    </button>
+                  </div>
+                </div>
+                
                 <div className="flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400 mr-2">
                     <polyline points="15 10 20 15 15 20"></polyline>

@@ -243,15 +243,15 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
 
   return (
     <div className="h-full flex flex-col bg-[#1a1816] text-[#eae6db]">
-      <div className="p-3 border-b border-[#534741] bg-[#252220] relative overflow-hidden">
+      <div className="p-2 sm:p-3 border-b border-[#534741] bg-[#252220] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-50"></div>
         <div className="relative z-10 flex justify-between items-center min-h-[2rem]">
-          <div className="flex items-center space-x-3 flex-1 min-w-0">
-            <h2 className="text-lg font-medium text-[#eae6db] flex-shrink-0">
+          <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
+            <h2 className="text-base sm:text-lg font-medium text-[#eae6db] flex-shrink-0">
               <span className={`bg-clip-text text-transparent bg-gradient-to-r from-amber-500 via-orange-400 to-yellow-300 ${serifFontClass}`}>
                 {t("regexScriptEditor.title")}
               </span>
-              <span className={`ml-2 text-sm text-[#a18d6f] ${serifFontClass} inline-block truncate max-w-[150px] align-bottom`} title={characterName}>
+              <span className={`ml-1 sm:ml-2 text-xs sm:text-sm text-[#a18d6f] ${serifFontClass} inline-block truncate max-w-[100px] sm:max-w-[150px] align-bottom`} title={characterName}>
                 - {characterName}
               </span>
             </h2>
@@ -274,8 +274,8 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 </>
               )}
             </div>
-            <div className={`md:hidden flex items-center space-x-1 text-xs text-[#a18d6f] ${serifFontClass} flex-shrink-0`}>
-              <span className="bg-[#1a1816] px-2 py-1 rounded border border-[#534741] whitespace-nowrap">
+            <div className={`md:hidden flex items-center space-x-1 text-[10px] sm:text-xs text-[#a18d6f] ${serifFontClass} flex-shrink-0`}>
+              <span className="bg-[#1a1816] px-1.5 sm:px-2 py-1 rounded border border-[#534741] whitespace-nowrap">
                 {Object.keys(scripts).length} / {Object.values(scripts).filter(s => !s.disabled).length} / {Object.values(scripts).filter(s => s.disabled).length}
                 {filterBy !== "all" && ` (${filteredScripts.length})`}
               </span>
@@ -286,9 +286,9 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
               trackButtonClick("page", "关闭正则编辑器");
               onClose();
             }}
-            className="w-7 h-7 flex items-center justify-center text-[#a18d6f] hover:text-[#eae6db] transition-colors duration-300 rounded-md hover:bg-[#333] group flex-shrink-0 ml-2"
+            className="w-6 h-6 sm:w-7 sm:h-7 flex items-center justify-center text-[#a18d6f] hover:text-[#eae6db] transition-colors duration-300 rounded-md hover:bg-[#333] group flex-shrink-0 ml-2"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:scale-110">
+            <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:scale-110">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -296,19 +296,20 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
         </div>
       </div>
 
-      <div className="p-3 border-b border-[#534741] bg-[#1a1816]">
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div className="flex items-center space-x-2 flex-wrap">
+      <div className="p-2 sm:p-3 border-b border-[#534741] bg-[#1a1816]">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-3">
+          <div className="flex items-center space-x-1.5 sm:space-x-2 flex-wrap">
             <button
               onClick={() => setEditingScript({})}
-              className="px-3 py-1.5 bg-gradient-to-r from-[#1f1c1a] to-[#13100e] hover:from-[#282521] hover:to-[#1a1613] text-[#e9c08d] hover:text-[#f6daae] rounded-md transition-all duration-300 text-sm font-medium shadow-lg hover:shadow-[#f8b758]/20 group flex-shrink-0 border border-[#403a33]"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-[#1f1c1a] to-[#13100e] hover:from-[#282521] hover:to-[#1a1613] text-[#e9c08d] hover:text-[#f6daae] rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-lg hover:shadow-[#f8b758]/20 group flex-shrink-0 border border-[#403a33]"
             >
               <span className={`flex items-center ${serifFontClass}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 transition-transform duration-300 group-hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 sm:mr-1.5 transition-transform duration-300 group-hover:scale-110">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                {t("regexScriptEditor.addNewScript")}
+                <span className="hidden sm:inline">{t("regexScriptEditor.addNewScript")}</span>
+                <span className="sm:hidden">{t("regexScriptEditor.addNewScript")}</span>
               </span>
             </button>
             
@@ -317,43 +318,44 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 trackButtonClick("page", "打开正则导入");
                 setIsImportModalOpen(true);
               }}
-              className="px-3 py-1.5 bg-gradient-to-r from-[#1a1c1f] to-[#0e1013] hover:from-[#252528] hover:to-[#13161a] text-[#8dc0e9] hover:text-[#aed6f6] rounded-md transition-all duration-300 text-sm font-medium shadow-lg hover:shadow-[#58b7f8]/20 group flex-shrink-0 border border-[#333a40]"
+              className="px-2 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-[#1a1c1f] to-[#0e1013] hover:from-[#252528] hover:to-[#13161a] text-[#8dc0e9] hover:text-[#aed6f6] rounded-md transition-all duration-300 text-xs sm:text-sm font-medium shadow-lg hover:shadow-[#58b7f8]/20 group flex-shrink-0 border border-[#333a40]"
             >
               <span className={`flex items-center ${serifFontClass}`}>
-                <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1.5 transition-transform duration-300 group-hover:scale-110">
+                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 sm:mr-1.5 transition-transform duration-300 group-hover:scale-110">
                   <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                   <polyline points="7 10 12 15 17 10"></polyline>
                   <line x1="12" y1="15" x2="12" y2="3"></line>
                 </svg>
-                {t("regexScriptEditor.importScript")}
+                <span className="hidden sm:inline">{t("regexScriptEditor.importScript")}</span>
+                <span className="sm:hidden">{t("regexScriptEditor.importScript")}</span>
               </span>
             </button>
           </div>
-          <div className="flex items-center space-x-4 text-xs text-[#a18d6f] bg-[#252220] px-3 py-2 rounded border border-[#534741] flex-shrink-0">
-            <div className="flex items-center space-x-2">
-              <span className={`whitespace-nowrap ${fontClass}`}>{t("regexScriptEditor.globalEnabled")}:</span>
-              <span className={`${settings.enabled ? "text-amber-400" : "text-rose-400"} font-medium`}>
+          <div className="flex items-center space-x-2 sm:space-x-4 text-[10px] sm:text-xs text-[#a18d6f] bg-[#252220] px-2 sm:px-3 py-1.5 sm:py-2 rounded border border-[#534741] flex-shrink-0 overflow-hidden">
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <span className={`whitespace-nowrap ${fontClass} truncate`}>{t("regexScriptEditor.globalEnabled")}:</span>
+              <span className={`${settings.enabled ? "text-amber-400" : "text-rose-400"} font-medium flex-shrink-0`}>
                 {settings.enabled ? t("regexScriptEditor.yes") : t("regexScriptEditor.no")}
               </span>
             </div>
-            <span>•</span>
-            <div className="flex items-center space-x-2">
-              <span className={`whitespace-nowrap ${fontClass}`}>{t("regexScriptEditor.applyToResponse")}:</span>
-              <span className={`${settings.applyToResponse ? "text-amber-400" : "text-rose-400"} font-medium`}>
+            <span className="hidden sm:inline">•</span>
+            <div className="flex items-center space-x-1 sm:space-x-2">
+              <span className={`whitespace-nowrap ${fontClass} truncate`}>{t("regexScriptEditor.applyToResponse")}:</span>
+              <span className={`${settings.applyToResponse ? "text-amber-400" : "text-rose-400"} font-medium flex-shrink-0`}>
                 {settings.applyToResponse ? t("regexScriptEditor.yes") : t("regexScriptEditor.no")}
               </span>
             </div>
           </div>
         </div>
       </div>
-      <div className="p-3 border-b border-[#534741] bg-gradient-to-r from-[#252220]/80 via-[#1a1816]/60 to-[#252220]/80 backdrop-blur-sm">
+      <div className="p-2 sm:p-3 border-b border-[#534741] bg-gradient-to-r from-[#252220]/80 via-[#1a1816]/60 to-[#252220]/80 backdrop-blur-sm">
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400/80">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-amber-400/80">
                 <path d="M3 6h18M7 12h10m-7 6h4"></path>
               </svg>
-              <label className={`text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
+              <label className={`text-[10px] sm:text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
                 {t("regexScriptEditor.sortBy")}
               </label>
             </div>
@@ -363,30 +365,30 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 value={sortBy}
                 onChange={(e) => handleSortByChange(e.target.value)}
                 className={`appearance-none bg-gradient-to-br from-[#1a1816] via-[#252220] to-[#1a1816] 
-                  text-[#eae6db] px-3 py-1.5 pr-7 rounded-md border border-[#534741]/60 
+                  text-[#eae6db] px-2 sm:px-3 py-1 sm:py-1.5 pr-5 sm:pr-7 rounded-md border border-[#534741]/60 
                   focus:border-amber-500/60 focus:outline-none focus:ring-2 focus:ring-amber-500/20 
                   transition-all duration-300 hover:border-[#534741] backdrop-blur-sm
-                  shadow-inner text-xs font-medium ${serifFontClass}
+                  shadow-inner text-[10px] sm:text-xs font-medium ${serifFontClass}
                   hover:shadow-lg hover:shadow-amber-500/5`}
               >
                 <option value="priority" className="bg-[#1a1816] text-[#eae6db]">{t("regexScriptEditor.priority")}</option>
                 <option value="name" className="bg-[#1a1816] text-[#eae6db]">{t("regexScriptEditor.name")}</option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#a18d6f]">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 sm:pr-2 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#a18d6f]">
                   <path d="M6 9l6 6 6-6"></path>
                 </svg>
               </div>
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className={`text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
+          <div className="flex items-center gap-1 sm:gap-1.5">
+            <span className={`text-[10px] sm:text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
               {t("regexScriptEditor.sortOrder")}:
             </span>
             <button
               onClick={handleSortOrderChange}
-              className={`group relative flex items-center gap-1.5 px-3 py-1.5 rounded-md 
+              className={`group relative flex items-center gap-1 sm:gap-1.5 px-2 sm:px-3 py-1 sm:py-1.5 rounded-md 
                 bg-gradient-to-br from-[#1a1816] via-[#252220] to-[#1a1816] 
                 border border-[#534741]/60 hover:border-amber-500/40 
                 text-[#eae6db] hover:text-amber-200 
@@ -395,27 +397,27 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 focus:outline-none focus:ring-2 focus:ring-amber-500/20 ${serifFontClass}`}
               title={sortOrder === "asc" ? t("regexScriptEditor.ascending") : t("regexScriptEditor.descending")}
             >
-              <div className={`flex items-center justify-center w-4 h-4 rounded-full 
+              <div className={`flex items-center justify-center w-3 h-3 sm:w-4 sm:h-4 rounded-full 
                 bg-gradient-to-br ${sortOrder === "asc" 
       ? "from-amber-500/20 to-amber-600/30 text-amber-400" 
       : "from-blue-500/20 to-blue-600/30 text-blue-400"} 
                 transition-all duration-300 group-hover:scale-110`}>
-                <span className="text-xs font-bold">
+                <span className="text-[10px] sm:text-xs font-bold">
                   {sortOrder === "asc" ? "↑" : "↓"}
                 </span>
               </div>
-              <span className="text-xs font-medium">
+              <span className="text-[10px] sm:text-xs font-medium">
                 {sortOrder === "asc" ? t("regexScriptEditor.asc") : t("regexScriptEditor.desc")}
               </span>
             </button>
           </div>
 
-          <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-1.5">
+              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80">
                 <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
               </svg>
-              <label className={`text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
+              <label className={`text-[10px] sm:text-xs text-[#a18d6f] font-medium ${serifFontClass}`}>
                 {t("regexScriptEditor.filterBy")}
               </label>
             </div>
@@ -425,10 +427,10 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 value={filterBy}
                 onChange={(e) => handleFilterByChange(e.target.value)}
                 className={`appearance-none bg-gradient-to-br from-[#1a1816] via-[#252220] to-[#1a1816] 
-                  text-[#eae6db] px-3 py-1.5 pr-7 rounded-md border border-[#534741]/60 
+                  text-[#eae6db] px-2 sm:px-3 py-1 sm:py-1.5 pr-5 sm:pr-7 rounded-md border border-[#534741]/60 
                   focus:border-blue-500/60 focus:outline-none focus:ring-2 focus:ring-blue-500/20 
                   transition-all duration-300 hover:border-[#534741] backdrop-blur-sm
-                  shadow-inner text-xs font-medium ${serifFontClass}
+                  shadow-inner text-[10px] sm:text-xs font-medium ${serifFontClass}
                   hover:shadow-lg hover:shadow-blue-500/5`}
               >
                 <option value="all" className="bg-[#1a1816] text-[#eae6db]">{t("regexScriptEditor.filterAll")}</option>
@@ -436,8 +438,8 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                 <option value="disabled" className="bg-[#1a1816] text-[#eae6db]">{t("regexScriptEditor.filterDisabled")}</option>
                 <option value="imported" className="bg-[#1a1816] text-[#eae6db]">{t("regexScriptEditor.filterImported")}</option>
               </select>
-              <div className="absolute inset-y-0 right-0 flex items-center pr-2 pointer-events-none">
-                <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#a18d6f]">
+              <div className="absolute inset-y-0 right-0 flex items-center pr-1.5 sm:pr-2 pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-[#a18d6f]">
                   <path d="M6 9l6 6 6-6"></path>
                 </svg>
               </div>
@@ -447,7 +449,7 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
       </div>
 
       <div className="flex-1 overflow-hidden">
-        <div className="h-full overflow-y-auto p-4 pb-8 space-y-4">
+        <div className="h-full overflow-y-auto p-2 sm:p-4 pb-8 space-y-2 sm:space-y-4">
           {Object.keys(scripts).length === 0 ? (
             <div className="flex flex-col items-center justify-center h-64 text-[#a18d6f]">
               <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1" strokeLinecap="round" strokeLinejoin="round" className="mb-4 opacity-50">
@@ -458,7 +460,7 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
               <p className={`text-sm opacity-70 ${fontClass}`}>{t("regexScriptEditor.noScriptsDescription")}</p>
             </div>
           ) : (
-            <div className="space-y-3 pb-12">
+            <div className="space-y-2 sm:space-y-3 pb-12">
               {sortedScripts.map(([scriptId, script], index) => {
                 const isExpanded = expandedScripts.has(scriptId);
                 return (
@@ -475,16 +477,16 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                       transitionDelay: `${index * 50}ms`,
                     }}
                   >
-                    <div className="p-4 border-b border-[#534741]/50">
-                      <div className="flex items-center justify-between mb-3">
-                        <div className="flex items-center space-x-3">
+                    <div className="p-2 sm:p-4 border-b border-[#534741]/50">
+                      <div className="flex items-center justify-between mb-2 sm:mb-3">
+                        <div className="flex items-center space-x-2 sm:space-x-3 flex-1 min-w-0">
                           <button
                             onClick={() => toggleScriptExpansion(scriptId)}
-                            className="text-[#a18d6f] hover:text-[#f4e8c1] transition-colors"
+                            className="text-[#a18d6f] hover:text-[#f4e8c1] transition-colors flex-shrink-0"
                           >
                             <svg
                               xmlns="http://www.w3.org/2000/svg"
-                              className={`h-4 w-4 transition-transform duration-200 ${
+                              className={`h-3 w-3 sm:h-4 sm:w-4 transition-transform duration-200 ${
                                 isExpanded ? "rotate-90" : ""
                               }`}
                               fill="none"
@@ -494,38 +496,39 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                           </button>
-                          <h4 className={`font-medium ${serifFontClass} ${script.disabled ? "text-[#a18d6f]" : "text-[#f6daae]"}`}>
+                          <h4 className={`font-medium ${serifFontClass} ${script.disabled ? "text-[#a18d6f]" : "text-[#f6daae]"} text-sm sm:text-base truncate flex-1 min-w-0`}>
                             {script.scriptName}
                           </h4>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <span className={`text-xs px-2 py-1 rounded bg-[#252220] text-[#a18d6f] ${fontClass}`}>
+                        <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
+                          <span className={`text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 sm:py-1 rounded bg-[#252220] text-[#a18d6f] ${fontClass}`}>
                             {t("regexScriptEditor.priority")}: {script.placement?.[0] || 999}
                           </span>
                           <button
                             onClick={() => setEditingScript({ ...script, scriptKey: scriptId })}
-                            className={`text-xs px-3 py-1.5 bg-gradient-to-r from-[#1a1f1c] to-[#0e1310] hover:from-[#212821] hover:to-[#131a16]
+                            className={`text-[10px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-[#1a1f1c] to-[#0e1310] hover:from-[#212821] hover:to-[#131a16]
                               text-[#8de9c0] hover:text-[#aef6da] rounded-md transition-all duration-300 font-medium 
                               shadow-lg hover:shadow-[#58f8b7]/20 group flex-shrink-0 border border-[#33403a]`}
                           >
                             <span className={`flex items-center ${serifFontClass}`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 transition-transform duration-300 group-hover:scale-110">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5 sm:mr-1 transition-transform duration-300 group-hover:scale-110">
                                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
                                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
                               </svg>
-                              {t("regexScriptEditor.edit")}
+                              <span className="hidden sm:inline">{t("regexScriptEditor.edit")}</span>
+                              <span className="sm:hidden">{t("regexScriptEditor.edit")}</span>
                             </span>
                           </button>
                           <button
                             onClick={() => handleToggleScript(scriptId)}
-                            className={`text-xs px-3 py-1.5 rounded-md transition-all duration-300 font-medium shadow-lg group flex-shrink-0 ${
+                            className={`text-[10px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 rounded-md transition-all duration-300 font-medium shadow-lg group flex-shrink-0 ${
                               script.disabled
                                 ? "bg-gradient-to-r from-[#1a1f1c] to-[#0e1310] hover:from-[#212821] hover:to-[#131a16] text-[#8de9c0] hover:text-[#aef6da] border border-[#33403a] hover:shadow-[#58f8b7]/20"
                                 : "bg-gradient-to-r from-[#1f1c1a] to-[#13100e] hover:from-[#282521] hover:to-[#1a1613] text-[#e9c08d] hover:text-[#f6daae] border border-[#403a33] hover:shadow-[#f8b758]/20"
                             }`}
                           >
                             <span className={`flex items-center ${serifFontClass}`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 transition-transform duration-300 group-hover:scale-110">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5 sm:mr-1 transition-transform duration-300 group-hover:scale-110">
                                 {script.disabled ? (
                                   <>
                                     <circle cx="12" cy="12" r="10"></circle>
@@ -539,78 +542,80 @@ export default function RegexScriptEditor({ onClose, characterName, characterId 
                                   </>
                                 )}
                               </svg>
-                              {script.disabled ? t("regexScriptEditor.enable") : t("regexScriptEditor.disable")}
+                              <span className="hidden sm:inline">{script.disabled ? t("regexScriptEditor.enable") : t("regexScriptEditor.disable")}</span>
+                              <span className="sm:hidden">{script.disabled ? t("regexScriptEditor.enable") : t("regexScriptEditor.disable")}</span>
                             </span>
                           </button>
                           <button
                             onClick={() => handleDeleteScript(scriptId)}
-                            className={`text-xs px-3 py-1.5 bg-gradient-to-r from-[#1f1a1a] to-[#130e0e] hover:from-[#282121] hover:to-[#1a1313]
+                            className={`text-[10px] sm:text-xs px-1.5 sm:px-3 py-1 sm:py-1.5 bg-gradient-to-r from-[#1f1a1a] to-[#130e0e] hover:from-[#282121] hover:to-[#1a1313]
                               text-[#e98d8d] hover:text-[#f6aeae] rounded-md transition-all duration-300 font-medium 
                               shadow-lg hover:shadow-[#f85858]/20 group flex-shrink-0 border border-[#403333]`}
                           >
                             <span className={`flex items-center ${serifFontClass}`}>
-                              <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1 transition-transform duration-300 group-hover:scale-110">
+                              <svg xmlns="http://www.w3.org/2000/svg" width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-0.5 sm:mr-1 transition-transform duration-300 group-hover:scale-110">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2-2v2"></path>
                                 <line x1="10" y1="11" x2="10" y2="17"></line>
                                 <line x1="14" y1="11" x2="14" y2="17"></line>
                               </svg>
-                              {t("regexScriptEditor.delete")}
+                              <span className="hidden sm:inline">{t("regexScriptEditor.delete")}</span>
+                              <span className="sm:hidden">{t("regexScriptEditor.delete")}</span>
                             </span>
                           </button>
                         </div>
                       </div>
                       
-                      <div className="flex items-center space-x-2 mb-2">
-                        <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 backdrop-blur-sm border ${
+                      <div className="flex items-center space-x-1.5 sm:space-x-2 mb-1.5 sm:mb-2 flex-wrap">
+                        <span className={`inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-300 backdrop-blur-sm border ${
                           !script.disabled 
                             ? "bg-gradient-to-br from-slate-800/60 via-amber-900/40 to-slate-800/60 text-amber-200/90 border-amber-600/30" 
                             : "bg-gradient-to-br from-slate-800/60 via-stone-700/40 to-slate-800/60 text-stone-300/90 border-stone-500/30"
                         }`}>
-                          <span className={`w-2 h-2 rounded-full mr-2 ${
+                          <span className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full mr-1 sm:mr-2 ${
                             !script.disabled ? "bg-amber-400/80" : "bg-stone-400/80"
                           }`}></span>
                           {script.disabled ? t("regexScriptEditor.disabled") : t("regexScriptEditor.enabled")}
                         </span>
                         {script.extensions?.imported && (
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-300 backdrop-blur-sm border bg-gradient-to-br from-slate-800/60 via-blue-700/40 to-slate-800/60 text-blue-300/90 border-blue-500/30 hover:from-slate-700/70 hover:via-blue-600/50 hover:to-slate-700/70 hover:border-blue-400/40 hover:text-blue-200 hover:shadow-lg hover:shadow-blue-500/10">
-                            <span className="w-2 h-2 bg-blue-400/80 rounded-full mr-2 shadow-sm shadow-blue-400/50"></span>
+                          <span className="inline-flex items-center px-2 sm:px-3 py-1 sm:py-1.5 rounded-lg text-[10px] sm:text-xs font-medium transition-all duration-300 backdrop-blur-sm border bg-gradient-to-br from-slate-800/60 via-blue-700/40 to-slate-800/60 text-blue-300/90 border-blue-500/30 hover:from-slate-700/70 hover:via-blue-600/50 hover:to-slate-700/70 hover:border-blue-400/40 hover:text-blue-200 hover:shadow-lg hover:shadow-blue-500/10">
+                            <span className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-blue-400/80 rounded-full mr-1 sm:mr-2 shadow-sm shadow-blue-400/50"></span>
                             {t("worldBook.imported")}
                           </span>
                         )}
                       </div>
                       
                       {!isExpanded && (
-                        <div className={`text-sm ${fontClass}`}>
+                        <div className={`text-xs sm:text-sm ${fontClass}`}>
                           <span className="text-[#a18d6f]">{t("regexScriptEditor.findRegex")}:</span>
-                          <code className="ml-2 px-2 py-1 bg-[#1a1816] rounded text-[#f9c86d] font-mono text-xs cursor-pointer hover:bg-[#252220] transition-colors"
+                          <code className="ml-1 sm:ml-2 px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#1a1816] rounded text-[#f9c86d] font-mono text-[10px] sm:text-xs cursor-pointer hover:bg-[#252220] transition-colors break-all"
                             onClick={() => toggleScriptExpansion(scriptId)}>
-                            {truncateText(script.findRegex)}
+                            {truncateText(script.findRegex, window.innerWidth < 640 ? 30 : 50)}
                           </code>
                         </div>
                       )}
                     </div>
 
                     {isExpanded && (
-                      <div className="p-4 space-y-3 bg-[#1a1816]/50">
-                        <div className={`text-sm ${fontClass}`}>
+                      <div className="p-2 sm:p-4 space-y-2 sm:space-y-3 bg-[#1a1816]/50">
+                        <div className={`text-xs sm:text-sm ${fontClass}`}>
                           <span className="text-[#a18d6f] block mb-1">{t("regexScriptEditor.findRegex")}:</span>
-                          <code className="block px-3 py-2 bg-[#1a1816] rounded text-[#f9c86d] font-mono text-xs border border-[#534741]/30 break-all">
+                          <code className="block px-2 sm:px-3 py-1.5 sm:py-2 bg-[#1a1816] rounded text-[#f9c86d] font-mono text-[10px] sm:text-xs border border-[#534741]/30 break-all">
                             {script.findRegex}
                           </code>
                         </div>
-                        <div className={`text-sm ${fontClass}`}>
+                        <div className={`text-xs sm:text-sm ${fontClass}`}>
                           <span className="text-[#a18d6f] block mb-1">{t("regexScriptEditor.replaceString")}:</span>
-                          <code className="block px-3 py-2 bg-[#1a1816] rounded text-[#93c5fd] font-mono text-xs border border-[#534741]/30 break-all whitespace-pre-wrap">
+                          <code className="block px-2 sm:px-3 py-1.5 sm:py-2 bg-[#1a1816] rounded text-[#93c5fd] font-mono text-[10px] sm:text-xs border border-[#534741]/30 break-all whitespace-pre-wrap">
                             {script.replaceString}
                           </code>
                         </div>
                         {script.trimStrings && script.trimStrings.length > 0 && (
-                          <div className={`text-sm ${fontClass}`}>
+                          <div className={`text-xs sm:text-sm ${fontClass}`}>
                             <span className="text-[#a18d6f] block mb-1">{t("regexScriptEditor.trimStrings")}:</span>
                             <div className="flex flex-wrap gap-1">
                               {script.trimStrings.map((trimStr, index) => (
-                                <code key={index} className="px-2 py-1 bg-[#1a1816] rounded text-[#c4b5fd] font-mono text-xs border border-[#534741]/30">
+                                <code key={index} className="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-[#1a1816] rounded text-[#c4b5fd] font-mono text-[10px] sm:text-xs border border-[#534741]/30 break-all">
                                   {trimStr}
                                 </code>
                               ))}

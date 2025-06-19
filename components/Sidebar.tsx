@@ -5,7 +5,11 @@ import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useLanguage } from "@/app/i18n";
+import { isUpdateAvailable, fetchLatestRelease } from "@/utils/version-compare";
 import "@/app/styles/fantasy-ui.css";
+
+// Current app version from package.json
+const CURRENT_VERSION = "1.1.6";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -23,6 +27,8 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
   const { t, language, fontClass } = useLanguage();
   const [animationComplete, setAnimationComplete] = useState(false);
   const [isCreatorOpen, setIsCreatorOpen] = useState(true);
+  const [updateInfo, setUpdateInfo] = useState<{version: string, url: string} | null>(null);
+  const [hasCheckedUpdate, setHasCheckedUpdate] = useState(false);
   
   useEffect(() => {
     const loggedIn = localStorage.getItem("isLoggedIn") === "true";
@@ -55,6 +61,28 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
     
     return () => window.removeEventListener("resize", checkIfMobile);
   }, []);
+
+  // Check for updates on component mount
+  useEffect(() => {
+    const checkForUpdates = async () => {
+      if (hasCheckedUpdate) return;
+      
+      try {
+        const latestRelease = await fetchLatestRelease();
+        if (latestRelease && isUpdateAvailable(CURRENT_VERSION, latestRelease.version)) {
+          setUpdateInfo(latestRelease);
+        }
+      } catch (error) {
+        console.warn("Failed to check for updates:", error);
+      } finally {
+        setHasCheckedUpdate(true);
+      }
+    };
+
+    // Delay the check to avoid blocking initial render
+    const timer = setTimeout(checkForUpdates, 2000);
+    return () => clearTimeout(timer);
+  }, [hasCheckedUpdate]);
 
   if (isMobile) {
     return null;
@@ -492,6 +520,50 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
             <div className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-[#f8d36a] to-transparent w-0 group-hover:w-full transition-all duration-500"></div>
           </a>
         </div>
+
+        {/* Update notification */}
+        {updateInfo && (
+          <div className="mt-2">
+            <a 
+              href={updateInfo.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`focus:outline-none group relative overflow-hidden rounded-md w-full transition-all duration-300 ${!isOpen ? "p-2 flex justify-center" : "py-1.5 px-2 flex items-center justify-center"}`}
+            >
+              <div className="absolute inset-0 bg-gradient-to-br from-green-500/10 via-transparent to-transparent rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-0" />
+              <div className="absolute inset-0 w-full h-full bg-[#333] opacity-0 group-hover:opacity-10 transition-opacity duration-300 z-0" />
+              <div className="absolute bottom-0 left-0 h-[1px] bg-gradient-to-r from-transparent via-green-400 to-transparent w-0 group-hover:w-full transition-all duration-500 z-5" />
+              <div className="relative flex items-center justify-center transition-all duration-300 z-10">
+                <div className={`${isOpen ? "w-6 h-6" : "w-8 h-8"} flex items-center justify-center flex-shrink-0 text-green-400 group-hover:text-green-300 transition-colors duration-300`}>
+                  <svg xmlns="http://www.w3.org/2000/svg" width={isOpen ? "14" : "16"} height={isOpen ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:scale-110">
+                    <path d="M21 12c0 1-.6 1.8-1.5 2.1l-.3.1c-.3.1-.6.4-.6.8 0 .3.1.6.3.8l.3.3c.6.6 1 1.4 1 2.2s-.4 1.6-1 2.2c-.6.6-1.4 1-2.2 1s-1.6-.4-2.2-1l-.3-.3c-.2-.2-.5-.3-.8-.3-.4 0-.7.3-.8.6l-.1.3C12.8 20.4 12 21 11 21s-1.8-.6-2.1-1.5l-.1-.3c-.1-.3-.4-.6-.8-.6-.3 0-.6.1-.8.3l-.3.3c-.6.6-1.4 1-2.2 1s-1.6-.4-2.2-1c-.6-.6-1-1.4-1-2.2s.4-1.6 1-2.2l.3-.3c.2-.2.3-.5.3-.8 0-.4-.3-.7-.6-.8l-.3-.1C3.6 13.8 3 13 3 12s.6-1.8 1.5-2.1l.3-.1c.3-.1.6-.4.6-.8 0-.3-.1-.6-.3-.8l-.3-.3C4.2 7.3 3.8 6.5 3.8 5.7s.4-1.6 1-2.2c.6-.6 1.4-1 2.2-1s1.6.4 2.2 1l.3.3c.2.2.5.3.8.3.4 0 .7-.3.8-.6l.1-.3C11.2 3.6 12 3 13 3s1.8.6 2.1 1.5l.1.3c.1.3.4.6.8.6.3 0 .6-.1.8-.3l.3-.3c.6-.6 1.4-1 2.2-1s1.6.4 2.2 1c.6.6 1 1.4 1 2.2s-.4 1.6-1 2.2l-.3.3c-.2.2-.3.5-.3.8 0 .4.3.7.6.8l.3.1c.9.3 1.5 1.1 1.5 2.1z"/>
+                    <path d="m9 12 2 2 4-4"/>
+                  </svg>
+                </div>
+                {isOpen && (
+                  <div className="ml-2 transition-all duration-300 ease-in-out overflow-hidden" style={{ transitionDelay: isOpen ? "50ms" : "0ms", opacity: isOpen ? 1 : 0 }}>
+                    <span className={`magical-text whitespace-nowrap block text-xs font-medium text-green-400 group-hover:text-green-300 transition-colors duration-300 ${fontClass}`}>
+                      {isOpen && t("sidebar.goToUpdate").split("").map((char, index) => (
+                        <span 
+                          key={index} 
+                          className="inline-block transition-all duration-300" 
+                          style={{ 
+                            opacity: animationComplete ? 1 : 0,
+                            transform: animationComplete ? "translateY(0)" : "translateY(8px)",
+                            transitionDelay: `${250 + index * 30}ms`,
+                            width: char === " " ? "0.25em" : "auto",
+                          }}
+                        >
+                          {char}
+                        </span>
+                      ))}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </a>
+          </div>
+        )}
       </div>
     </div>
   );

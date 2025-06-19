@@ -229,6 +229,15 @@ export class PresetAssembler {
       finalUserMessageParts.push("<output>");
       finalUserMessageParts.push("在这里输出你的主要回应内容，包括角色的对话、行动、心理描述等。");
       finalUserMessageParts.push("");
+      finalUserMessageParts.push("<next_prompts>");
+      finalUserMessageParts.push("- [根据玩家当前状态做出重大决断，引发主线推进或支线开启，第三方人称叙事，不超过15字]");
+      finalUserMessageParts.push("- [引导进入未知或新领域，引发关键物品/人物/真相出现，第三方人称叙事，不超过15字]");
+      finalUserMessageParts.push("- [表达重要情感抉择或人际关系变化，影响未来走向，第三方人称叙事，不超过15字]");
+      finalUserMessageParts.push("</next_prompts>");
+      finalUserMessageParts.push("");
+      finalUserMessageParts.push("<events>");
+      finalUserMessageParts.push("[核心事件1，简洁陈述] ——> [核心事件2，简洁陈述] ——> [核心事件3，简洁陈述] ——> [核心事件4，简洁陈述] ——> [...]");
+      finalUserMessageParts.push("</events>");
       finalUserMessageParts.push("</output>");
       finalUserMessageParts.push("");
       finalUserMessageParts.push("注意：必须严格遵循上述XML标签格式，所有内容都必须包含在output标签内。");

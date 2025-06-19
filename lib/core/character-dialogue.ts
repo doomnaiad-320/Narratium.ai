@@ -9,7 +9,6 @@ import { PromptType } from "@/lib/models/character-prompts-model";
 import { getCharacterCompressorPromptZh, getCharacterCompressorPromptEn } from "@/lib/prompts/character-prompts";
 import { CharacterHistory } from "@/lib/core/character-history";
 import { DialogueOptions } from "@/lib/models/character-dialogue-model";
-import { RegexProcessor } from "@/lib/core/regex-processor";
 
 export class CharacterDialogue {
   character: Character;

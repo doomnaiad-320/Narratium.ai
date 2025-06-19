@@ -36,7 +36,10 @@
     "collapseCreation": "收起游戏区",
     "expandCreation": "展开游戏区",
     "collapseCreator": "收起创作区",
-    "expandCreator": "展开创作区"
+    "expandCreator": "展开创作区",
+    "goToUpdate": "前往更新",
+    "newVersionAvailable": "发现新版本",
+    "currentVersion": "当前版本: v{version}"
   },
   "modelSettings": {
     "title": "模型设置",
@@ -481,7 +484,9 @@
     "startingPoint": "开局",
     "rootNodeCannotJump": "根节点是对话的起点，不能跳转",
     "response": "回复内容",
-    "responsePlaceholder": "编辑回复内容..."
+    "responsePlaceholder": "编辑回复内容...",
+    "resetLayout": "重置布局",
+    "manualPositions": "手动位置"
   },  
   "downloadModal": {
       "title": "从社区仓库下载角色",

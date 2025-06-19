@@ -67,6 +67,12 @@ interface APIConfig {
   apiKey?: string;
 }
 
+/**
+ * Reads default API key and URL from environment variables if available
+ */
+const DEFAULT_API_KEY = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_KEY || "" : "";
+const DEFAULT_API_URL = typeof process !== "undefined" ? process.env.NEXT_PUBLIC_API_URL || "" : "";
+
 export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProps) {
   const { t, fontClass, serifFontClass } = useLanguage();
   
@@ -108,6 +114,24 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
       } catch (e) {
         console.error("Error parsing saved API configs", e);
       }
+    }
+
+    // If no configs exist and env variables are set, auto-create a default config
+    if (mergedConfigs.length === 0 && (DEFAULT_API_URL || DEFAULT_API_KEY)) {
+      console.log(1);
+      // Generate a default config name
+      const defaultConfigName = `【1】${DEFAULT_API_URL ? "API" : "OpenAI"}`;
+      const defaultConfig: APIConfig = {
+        id: generateId(),
+        name: defaultConfigName,
+        type: "openai",
+        baseUrl: DEFAULT_API_URL,
+        model: "",
+        apiKey: DEFAULT_API_KEY,
+      };
+      mergedConfigs = [defaultConfig];
+      localStorage.setItem("apiConfigs", JSON.stringify(mergedConfigs));
+      localStorage.setItem("activeConfigId", defaultConfig.id);
     }
 
     const storedActiveId = localStorage.getItem("activeConfigId");

@@ -1,5 +1,5 @@
 const DB_NAME = "CharacterAppDB";
-const DB_VERSION = 5;
+const DB_VERSION = 8; // Updated for Agent support
 
 export const CHARACTERS_RECORD_FILE = "characters_record";
 export const CHARACTER_DIALOGUES_FILE = "character_dialogues";
@@ -7,7 +7,9 @@ export const CHARACTER_IMAGES_FILE = "character_images";
 export const WORLD_BOOK_FILE = "world_book";
 export const REGEX_SCRIPTS_FILE = "regex_scripts";
 export const PRESET_FILE = "preset_data";
-export const CHARACTER_CREATION_HISTORY_FILE = "character_creation_history";
+
+// Agent-related storage constants  
+export const AGENT_CONVERSATIONS_FILE = "agent_conversations";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -36,8 +38,9 @@ function openDB(): Promise<IDBDatabase> {
       if (!db.objectStoreNames.contains(PRESET_FILE)) {
         db.createObjectStore(PRESET_FILE);
       }
-      if (!db.objectStoreNames.contains(CHARACTER_CREATION_HISTORY_FILE)) {
-        db.createObjectStore(CHARACTER_CREATION_HISTORY_FILE);
+      // Agent-related object stores
+      if (!db.objectStoreNames.contains(AGENT_CONVERSATIONS_FILE)) {
+        db.createObjectStore(AGENT_CONVERSATIONS_FILE);
       }
     };
   });
@@ -79,7 +82,7 @@ export async function initializeDataFiles(): Promise<void> {
     WORLD_BOOK_FILE,
     PRESET_FILE,
     REGEX_SCRIPTS_FILE,
-    CHARACTER_CREATION_HISTORY_FILE,
+    AGENT_CONVERSATIONS_FILE,
   ];
 
   await Promise.all(storeNames.map(storeName => {
@@ -150,7 +153,7 @@ export async function exportAllData(): Promise<Record<string, any>> {
     CHARACTER_DIALOGUES_FILE,
     WORLD_BOOK_FILE,
     REGEX_SCRIPTS_FILE,
-    CHARACTER_CREATION_HISTORY_FILE,
+    AGENT_CONVERSATIONS_FILE,
   ];
 
   for (const storeName of regularStores) {
@@ -197,7 +200,7 @@ export async function importAllData(data: Record<string, any>): Promise<void> {
     CHARACTER_DIALOGUES_FILE,
     WORLD_BOOK_FILE,
     REGEX_SCRIPTS_FILE,
-    CHARACTER_CREATION_HISTORY_FILE,
+    AGENT_CONVERSATIONS_FILE,
   ];
 
   for (const storeName of regularStores) {

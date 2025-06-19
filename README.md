@@ -64,12 +64,14 @@
 
 [Narratium.ai](https://narratium.org/) is an open-source platform for creating AI characters, immersive worlds, and dynamic conversations.It's your creative studio for building personalized roleplay adventures — from emotional journeys to epic sagas.
 
-| Quick Start |
+| Quickly Start |
 | :---------- |
 
 For detailed installation and setup instructions, please refer to our [Getting Started Guide](./docs/GETTING_STARTED.md)
 
-[Download for Mac, Windows, Linux](https://github.com/Narratium/Narratium.ai/releases)
+For detailed Vercel deployment instructions, please refer to the [Vercel Deployment Guide](./docs/VERCEL_DEPLOYMENT.md).
+
+For Download Version: please refer to the [Download for Mac, Windows, Linux](https://github.com/Narratium/Narratium.ai/releases)
 
 | Features |
 | :------- |
@@ -77,8 +79,6 @@ For detailed installation and setup instructions, please refer to our [Getting S
 - **Immersive Adventure Mode**: Create personalized worlds and make decisions that matter.
 - **Visual Memory Management**: React Flow-powered session tracing and branching.
 - **Character Cards & Lore**: Compatible with SillyTavern cards, manage everything in one place.
-
-For detailed installation and setup instructions, please refer to our [Getting Started Guide](./docs/GETTING_STARTED.md).
 
 | Narratium vs. Other AI Roleplay Platforms |
 | :---------------------------------------- |
