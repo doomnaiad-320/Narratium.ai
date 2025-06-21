@@ -13,7 +13,7 @@
 
 <br>
 
-![Narratium.ai](/public/banner.png)
+![Narratium.ai](https://raw.githubusercontent.com/Narratium/Narratium.ai/main/public/banner.png)
 
 <p align="center">
   <em>An open-source AI character platform to build, customize, and chat with virtual personas</em>
@@ -47,7 +47,7 @@
 
 <br>
 
-<img src="./assets/demo_show.gif" style="width: 100%"/>
+<img src="https://raw.githubusercontent.com/Narratium/Narratium.ai/main/assets/demo_show.gif" style="width: 100%"/>
 
 ## Getting started & staying tuned with us
 
@@ -57,7 +57,7 @@
 
 <br>
 
-<img src="./assets/welcome_star.gif" style="width: 100%"/>
+<img src="https://raw.githubusercontent.com/Narratium/Narratium.ai/main/assets/welcome_star.gif" style="width: 100%" />
 
 | What is Narratium |
 | :---------------- |

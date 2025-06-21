@@ -23,8 +23,10 @@ Click the button below to deploy Narratium.ai to Vercel with one click:
    - Output Directory: `.next` (default)
 
 4. **Environment Variables** (if needed)
-   - Add any required environment variables in Vercel dashboard
-   - Common variables: API keys, database URLs, etc.
+   - Add environment variables in your Vercel project's settings.
+   - If you want to allow friends to use your application without needing to enter their own API key, you'll need to configure a server-side API key.
+   - Refer to the `.env.example` file in the project root, and add `NEXT_PUBLIC_API_KEY` and `NEXT_PUBLIC_API_URL` (if needed) to Vercel's environment variables.
+   - This way, your application will use the key you've provided, and your friends can start chatting right away.
 
 5. **Deploy**
    - Click "Deploy"
@@ -64,8 +66,10 @@ For deployment issues, check [Vercel Documentation](https://vercel.com/docs)
    - 输出目录：`.next`（默认）
 
 4. **环境变量**（如需要）
-   - 在 Vercel 控制台添加所需的环境变量
-   - 常见变量：API 密钥、数据库 URL 等
+   - 在 Vercel 项目的设置中添加环境变量。
+   - 如果您希望让朋友无需填写自己的 API 密钥即可使用您的应用，您需要配置服务器端的 API 密钥。
+   - 请参考项目根目录下的 `.env.example` 文件，将 `NEXT_PUBLIC_API_KEY` 和 `NEXT_PUBLIC_API_URL` (如果需要) 添加到 Vercel 的环境变量中。
+   - 这样，您的应用将使用您提供的密钥，朋友们就可以直接开始聊天了。
 
 5. **部署**
    - 点击 "Deploy"

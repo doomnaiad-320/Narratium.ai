@@ -1,3 +1,34 @@
+/**
+ * Dialogue Tree Modal Component
+ * 
+ * This component provides a comprehensive visual interface for dialogue tree management:
+ * - Interactive tree visualization using ReactFlow and ELK.js automatic layout
+ * - Real-time dialogue navigation and branch switching
+ * - Node editing capabilities with content modification
+ * - Incremental data loading for performance optimization
+ * - User position preservation across layout updates
+ * - Visual indicators for current conversation path
+ * - Export and layout management features
+ * 
+ * The component integrates ELK.js for intelligent automatic layout generation,
+ * with fallback grid layout for reliability. It supports both progressive updates
+ * for new nodes and full layout recalculation when needed.
+ * 
+ * Key Features:
+ * - ELK.js automatic layout with user position preservation
+ * - Progressive loading of new dialogue nodes
+ * - Interactive node editing with live content updates
+ * - Branch navigation and conversation path highlighting
+ * - Responsive design with minimap and zoom controls
+ * - Incremental data fetching for performance
+ * 
+ * Dependencies:
+ * - ReactFlow: For interactive node graph visualization
+ * - ELK.js: For automatic graph layout calculation
+ * - Character dialogue APIs: For data management
+ * - Google Analytics: For user interaction tracking
+ */
+
 "use client";
 
 import { useState, useEffect, useCallback, useRef, useMemo } from "react";
@@ -25,6 +56,9 @@ import { getCharacterDialogue } from "@/function/dialogue/info";
 import { getIncrementalDialogue } from "@/function/dialogue/incremental-info";
 import { editDialaogueNodeContent } from "@/function/dialogue/edit";
 
+/**
+ * Props interface for the DialogueTreeModal component
+ */
 interface DialogueTreeModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -32,7 +66,10 @@ interface DialogueTreeModalProps {
   onDialogueEdit?: () => void;
 }
 
-// ELK layout interfaces
+/**
+ * ELK.js layout calculation interfaces
+ * These interfaces define the data structures used by ELK.js for automatic layout generation
+ */
 interface ELKNode {
   id: string;
   width?: number;
@@ -54,6 +91,10 @@ interface ELKGraph {
   edges: ELKEdge[];
 }
 
+/**
+ * Extended ReactFlow Node interface for dialogue tree nodes
+ * Contains all data and handlers needed for dialogue interaction
+ */
 interface DialogueNode extends Node {
   data: {
     label: string;
@@ -68,6 +109,20 @@ interface DialogueNode extends Node {
   };
 }
 
+/**
+ * Individual dialogue node component for the tree visualization
+ * 
+ * Renders a single dialogue node with:
+ * - Expandable content display
+ * - Jump-to-node functionality
+ * - Edit capabilities
+ * - Visual indicators for current conversation path
+ * - Color-coded styling based on node type and status
+ * 
+ * @param id - Unique identifier for the dialogue node
+ * @param data - Node data containing content and interaction handlers
+ * @returns {JSX.Element} Rendered dialogue node component
+ */
 function DialogueNodeComponent({ id, data }: NodeProps<DialogueNode["data"]>) {
   const { t, fontClass, serifFontClass } = useLanguage();
   const [isExpanded, setIsExpanded] = useState(false);
@@ -234,6 +289,17 @@ function DialogueNodeComponent({ id, data }: NodeProps<DialogueNode["data"]>) {
   );
 }
 
+/**
+ * Custom CSS styles for ReactFlow dialogue tree visualization
+ * 
+ * Defines animations and visual effects for:
+ * - Node transition animations
+ * - Edge flow animations with different styles for current path, root, and other paths
+ * - Visual effects including shadows and stroke patterns
+ * - Responsive styling for different node states
+ * 
+ * @returns {JSX.Element} Style component with global CSS injection
+ */
 const DialogueFlowStyles = () => (
   <style jsx global>{`
     .react-flow__node {
@@ -296,6 +362,37 @@ const nodeTypes: NodeTypes = {
   dialogueNode: DialogueNodeComponent,
 };
 
+/**
+ * Main dialogue tree modal component
+ * 
+ * Provides comprehensive dialogue tree visualization and management functionality.
+ * Integrates ELK.js for automatic layout generation with user position preservation,
+ * supports incremental data loading, and offers interactive editing capabilities.
+ * 
+ * Layout Management:
+ * - ELK.js automatic layout with layered algorithm optimization
+ * - Progressive layout updates preserving user-adjusted node positions
+ * - Fallback grid layout for reliability
+ * - Reset layout functionality clearing all user adjustments
+ * 
+ * Data Management:
+ * - Incremental dialogue fetching for performance
+ * - Real-time current path highlighting
+ * - Node content editing with live updates
+ * - Branch navigation and conversation jumping
+ * 
+ * User Experience:
+ * - Interactive node dragging with position memory
+ * - Responsive design with minimap and zoom controls
+ * - Loading states and error handling
+ * - Keyboard and mouse interaction support
+ * 
+ * @param isOpen - Controls modal visibility
+ * @param onClose - Callback for closing the modal
+ * @param characterId - ID of the character whose dialogue tree to display
+ * @param onDialogueEdit - Callback triggered when dialogue content is modified
+ * @returns {JSX.Element | null} The dialogue tree modal or null if not open
+ */
 export default function DialogueTreeModal({ isOpen, onClose, characterId, onDialogueEdit }: DialogueTreeModalProps) {
   const { t, fontClass, serifFontClass } = useLanguage();
   const [nodes, setNodes, onNodesChange] = useNodesState([]);
@@ -324,7 +421,26 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
   const reactFlowInstanceRef = useRef<ReactFlowInstance | null>(null);
   const elk = new ELK();
   
-  // Fallback grid layout function
+  /**
+   * Layout Calculation Functions
+   * 
+   * These functions handle different layout strategies for the dialogue tree:
+   * - ELK.js automatic layout with optimization
+   * - Fallback grid layout for reliability
+   * - Progressive layout preserving user positions
+   */
+  
+  /**
+   * Calculates fallback grid layout when ELK.js fails or is unavailable
+   * 
+   * Generates a responsive grid layout with:
+   * - Dynamic column calculation based on node count
+   * - Adaptive spacing that scales with node quantity
+   * - Centered positioning for visual balance
+   * 
+   * @param nodes - Array of dialogue nodes to position
+   * @returns {DialogueNode[]} Nodes with calculated grid positions
+   */
   const calculateFallbackLayout = useCallback((nodes: DialogueNode[]) => {
     const nodeCount = nodes.length;
     const columns = nodeCount <= 3 ? 1 : Math.max(1, Math.round(Math.sqrt(nodeCount)));
@@ -364,7 +480,19 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     });
   }, []);
   
-  // ELK layout calculation function
+  /**
+   * Calculates automatic layout using ELK.js library
+   * 
+   * Configures and executes ELK.js layered layout algorithm with:
+   * - Optimized parameters for dialogue tree structures
+   * - Top-to-bottom hierarchical flow
+   * - Edge crossing minimization
+   * - Adaptive spacing and alignment
+   * 
+   * @param nodes - Array of nodes to layout
+   * @param edges - Array of edges connecting the nodes
+   * @returns {Promise<ELKGraph | null>} ELK layout result or null if failed
+   */
   const calculateELKLayout = useCallback(async (nodes: any[], edges: any[]) => {
     const elkGraph: ELKGraph = {
       id: "root",
@@ -411,7 +539,20 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   }, [elk]);
 
-  // Progressive layout - use full layout but preserve user positions
+  /**
+   * Calculates progressive layout preserving user-adjusted positions
+   * 
+   * Performs intelligent layout updates that:
+   * - Preserves manually adjusted node positions
+   * - Applies ELK layout to new or unchanged nodes
+   * - Maintains visual consistency across updates
+   * - Falls back to grid layout if ELK fails
+   * 
+   * @param allNodes - Complete array of nodes including new ones
+   * @param allEdges - Complete array of edges
+   * @param existingNodes - Previously positioned nodes
+   * @returns {Promise<DialogueNode[]>} Nodes with progressive layout applied
+   */
   const calculateProgressiveLayout = useCallback(async (
     allNodes: DialogueNode[], 
     allEdges: Edge[], 
@@ -468,7 +609,17 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   }, [calculateELKLayout, userAdjustedPositions, calculateFallbackLayout]);
 
-  // Reset layout function
+  /**
+   * Resets the layout to fresh ELK calculation, clearing all user adjustments
+   * 
+   * Performs a complete layout recalculation:
+   * - Clears all user-adjusted positions
+   * - Applies fresh ELK layout to all nodes
+   * - Provides clean slate for tree visualization
+   * - Falls back to grid layout on failure
+   * 
+   * @returns {Promise<void>} Async operation completion
+   */
   const resetLayout = useCallback(async () => {
     if (!characterId || nodes.length === 0) return;
     
@@ -511,7 +662,27 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   }, [characterId, nodes, edges, calculateELKLayout, calculateFallbackLayout]);
 
-  // Update current path colors without affecting layout
+  /**
+   * Event Handlers and Utility Functions
+   * 
+   * These functions handle user interactions and maintain component state:
+   * - Color updates for current conversation path
+   * - Node editing and content management
+   * - Navigation and branch switching
+   * - User position tracking
+   */
+
+  /**
+   * Updates visual indicators for current conversation path without layout changes
+   * 
+   * Efficiently updates node and edge styling to highlight:
+   * - Current conversation path in red
+   * - Root connections in purple
+   * - Other paths in neutral colors
+   * 
+   * @param characterId - ID of character to fetch current path for
+   * @returns {Promise<void>} Async operation completion
+   */
   const updateCurrentPathColors = useCallback(async (characterId: string) => {
     try {
       const response = await getCharacterDialogue(characterId);
@@ -598,12 +769,22 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   }, []);
   
+  /**
+   * Initializes ReactFlow instance and sets up viewport
+   * 
+   * @param instance - ReactFlow instance reference
+   */
   const handleFlowInit = useCallback((instance: ReactFlowInstance) => {
     reactFlowInstanceRef.current = instance;
     adjustViewport(instance);
   }, []);
 
-  // Handle node drag end to save user positions
+  /**
+   * Handles node drag completion to save user-adjusted positions
+   * 
+   * @param _ - Unused event parameter
+   * @param node - The dragged node with new position
+   */
   const handleNodeDragStop = useCallback((_: any, node: Node) => {
     setUserAdjustedPositions(prev => ({
       ...prev,
@@ -726,7 +907,26 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     };
   }, [isEditModalOpen]);
 
-  // Fetch incremental dialogue data (only new nodes)
+  /**
+   * Data Fetching and Processing Functions
+   * 
+   * These functions handle dialogue data retrieval and processing:
+   * - Incremental fetching for performance optimization
+   * - Full dialogue data loading for initial state
+   * - Node processing and layout integration
+   */
+
+  /**
+   * Fetches only new/updated dialogue nodes for performance optimization
+   * 
+   * Implements incremental loading strategy:
+   * - Compares with known node IDs to identify changes
+   * - Fetches only new or modified content
+   * - Falls back to full fetch if incremental fails
+   * 
+   * @param characterId - ID of character whose dialogue to fetch
+   * @returns {Promise<void>} Async operation completion
+   */
   const fetchIncrementalDialogueData = async (characterId: string) => {
     if (!characterId) {
       return;
@@ -755,7 +955,18 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   };
 
-  // Full dialogue data fetch (initial load)
+  /**
+   * Performs full dialogue data fetch for initial component load
+   * 
+   * Comprehensive data loading that:
+   * - Fetches complete dialogue tree structure
+   * - Calculates optimal layout using ELK.js or fallback grid
+   * - Establishes initial visual state and node positioning
+   * - Sets up tracking for future incremental updates
+   * 
+   * @param characterId - ID of character whose dialogue to load
+   * @returns {Promise<void>} Async operation completion
+   */
   const fetchDialogueData = async (characterId: string) => {
     if (!characterId) {
       return;
@@ -983,7 +1194,19 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   };
 
-  // Process incremental nodes and integrate with existing nodes
+  /**
+   * Processes incremental node updates and integrates with existing tree
+   * 
+   * Handles real-time dialogue updates including:
+   * - New node additions with layout integration
+   * - Node content updates and modifications
+   * - Node deletions with cleanup
+   * - Current path recalculation and highlighting
+   * 
+   * @param incrementalResponse - Response containing node changes
+   * @param characterId - ID of character being updated
+   * @returns {Promise<void>} Async operation completion
+   */
   const processIncrementalNodes = async (incrementalResponse: any, characterId: string) => {
     try {
       const { newNodes, updatedNodes, deletedNodeIds, currentNodeId } = incrementalResponse;
@@ -1184,6 +1407,17 @@ export default function DialogueTreeModal({ isOpen, onClose, characterId, onDial
     }
   };
 
+  /**
+   * Saves edited dialogue node content and updates the tree
+   * 
+   * Handles content modification workflow:
+   * - Validates input and saves to backend
+   * - Updates local node state with new content
+   * - Regenerates content summary for tree display
+   * - Triggers callback for parent component updates
+   * 
+   * @returns {Promise<void>} Async save operation completion
+   */
   const saveEditContent = async () => {
     if (selectedNode && characterId) {
       setIsSaving(true);

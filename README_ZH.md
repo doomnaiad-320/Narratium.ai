@@ -13,7 +13,7 @@
 
 <br>
 
-![Narratium.ai](/public/banner.png)
+![Narratium.ai](https://raw.githubusercontent.com/Narratium/Narratium.ai/main/public/banner.png)
 
 <p align="center">
   <em>一个开源的AI角色平台，用于构建、定制和与虚拟角色聊天</em>
@@ -47,7 +47,7 @@
 
 <br>
 
-<img src="./assets/demo_show.gif" style="width: 100%"/>
+<img src="https://raw.githubusercontent.com/Narratium/Narratium.ai/main/assets/demo_show.gif" style="width: 100%"/>
 
 ## 开始使用并关注我们
 
@@ -57,7 +57,7 @@
 
 <br>
 
-<img src="./assets/welcome_star.gif" style="width: 100%"/>
+<img src="https://raw.githubusercontent.com/Narratium/Narratium.ai/main/assets/welcome_star.gif" style="width: 100%" />
 
 | 什么是Narratium |
 | :---------------- |

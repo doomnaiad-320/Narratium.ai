@@ -76,7 +76,8 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
         isOpen={isLoginModalOpen} 
         onClose={() => setIsLoginModalOpen(false)} 
       />
-      <div className="fixed left-0 top-0 h-full z-10">
+      {/* Sidebar - hidden on mobile, visible on desktop */}
+      <div className="fixed left-0 top-0 h-full z-10 hidden md:block">
         <Sidebar 
           isOpen={sidebarOpen} 
           toggleSidebar={toggleSidebar} 
@@ -85,9 +86,9 @@ export default function MainLayout({ children }: { children: React.ReactNode }) 
       </div>
       <main
         className={`flex-1 h-full overflow-auto transition-all duration-300
-            ${isMobile ? "ml-0" : (sidebarOpen ? "ml-72" : "ml-0")}
+            ml-0 ${sidebarOpen ? "md:ml-72" : "md:ml-0"}
             ${modelSidebarOpen ? "mr-64" : "mr-0"}
-            ${isMobile ? "pb-20" : ""}
+            pb-20 md:pb-0
           `}
       >
         <div className="h-full relative">

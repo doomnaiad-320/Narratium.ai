@@ -14,6 +14,24 @@ import "@/app/styles/fantasy-ui.css";
 import React from "react";
 import { v4 as uuidv4 } from "uuid";
 
+// Custom scrollbar styles for the comment section
+const commentScrollbarStyles = `
+  .comment-scroll::-webkit-scrollbar {
+    height: 4px;
+  }
+  .comment-scroll::-webkit-scrollbar-track {
+    background: #1a1816;
+    border-radius: 2px;
+  }
+  .comment-scroll::-webkit-scrollbar-thumb {
+    background: #534741;
+    border-radius: 2px;
+  }
+  .comment-scroll::-webkit-scrollbar-thumb:hover {
+    background: #6a5a4a;
+  }
+`;
+
 interface WorldBookEditorProps {
   onClose: () => void;
   characterName: string;
@@ -581,6 +599,7 @@ export default function WorldBookEditor({
 
   return (
     <div className="h-full flex flex-col breathing-bg text-[#eae6db]">
+      <style dangerouslySetInnerHTML={{ __html: commentScrollbarStyles }} />
       <div className="p-2 sm:p-3 border-b border-[#534741] bg-[#252220] relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-amber-500/5 to-transparent opacity-50"></div>
         <div className="relative z-10 flex justify-between items-center min-h-[2rem]">
@@ -868,8 +887,21 @@ export default function WorldBookEditor({
                         </button>
                       </div>
                     </td>
-                    <td className="p-1.5 sm:p-3 text-xs sm:text-sm text-[#eae6db] max-w-xs truncate">
-                      <span className="block truncate">{entry.comment || entry.primaryKey || t("worldBook.noComment")}</span>
+                    <td className="p-1.5 sm:p-3 text-xs sm:text-sm text-[#eae6db] max-w-xs">
+                      <div 
+                        className="comment-scroll relative overflow-x-auto max-w-[120px] sm:max-w-[150px]"
+                        style={{ 
+                          scrollbarWidth: "thin",
+                          scrollbarColor: "#534741 #1a1816",
+                        }}
+                      >
+                        <span 
+                          className="block whitespace-nowrap py-1 px-2 rounded bg-[#1a1816]/50 border border-[#534741]/30 hover:border-[#534741]/60 transition-all duration-200 cursor-text select-text"
+                          title={entry.comment || entry.primaryKey || t("worldBook.noComment")}
+                        >
+                          {entry.comment || entry.primaryKey || t("worldBook.noComment")}
+                        </span>
+                      </div>
                     </td>
                     <td className="p-1.5 sm:p-3">
                       <div className="flex flex-wrap gap-1 sm:gap-1.5">
