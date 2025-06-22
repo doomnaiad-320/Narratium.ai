@@ -64,6 +64,12 @@
 
 [Narratium.ai](https://narratium.org/) is an open-source platform for creating AI characters, immersive worlds, and dynamic conversations.It's your creative studio for building personalized roleplay adventures — from emotional journeys to epic sagas.
 
+| Version Information |
+| :---------------- |
+
+- **main**: Stable version branch, regularly builds desktop versions through pake
+- **dev**: Development version branch, with multiple commits daily
+
 | Quickly Start |
 | :---------- |
 
