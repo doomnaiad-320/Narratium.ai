@@ -601,7 +601,7 @@
     "exitFullscreen": "Close Editor"
   },
   "regexScriptEditor": {
-    "title": "Regex Script Editor",
+    "title": "Regex Editor",
     "close": "Close",
     "settings": "Settings",
     "enableProcessing": "Enable regex processing",

@@ -228,7 +228,7 @@ export default function UserTour({ steps, isVisible, onComplete, onSkip }: UserT
     <div className="fixed inset-0 z-[9999] pointer-events-auto">
       <div 
         ref={overlayRef}
-        className="absolute inset-0 bg-black bg-opacity-75 pointer-events-none"
+        className="absolute inset-0 bg-opacity-75 pointer-events-none"
         style={{
           background: currentStepData.target === "body" 
             ? "rgba(0, 0, 0, 0.75)"
