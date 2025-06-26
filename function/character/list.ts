@@ -1,4 +1,4 @@
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { adaptCharacterData } from "@/lib/adapter/tagReplacer";
 
 export async function getAllCharacters(language: "en" | "zh", username?: string) {

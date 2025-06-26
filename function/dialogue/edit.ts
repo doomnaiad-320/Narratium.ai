@@ -1,8 +1,8 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 import { CharacterDialogue } from "@/lib/core/character-dialogue";
 import { parseEvent } from "@/utils/response-parser";
 import { DialogueNode } from "@/lib/models/node-model";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { Character } from "@/lib/core/character";
 
 interface EditDialogueNodeRequest {

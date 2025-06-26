@@ -1,4 +1,4 @@
-import { WorldBookOperations, WorldBookSettings } from "@/lib/data/world-book-operation";
+import { WorldBookOperations, WorldBookSettings } from "@/lib/data/roleplay/world-book-operation";
 
 export async function getWorldBookSettings(characterId: string) {
   if (!characterId) {

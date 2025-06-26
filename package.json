@@ -14,7 +14,8 @@
     "pake-linux": "pake out/index.html --name narratium --use-local-file --icon ./public/icon.png"
   },
   "dependencies": {
-    "@langchain/core": "^0.3.44",
+    "@langchain/core": "^0.3.61",
+    "@langchain/langgraph": "^0.3.4",
     "@langchain/ollama": "^0.2.0",
     "@langchain/openai": "^0.5.5",
     "@supabase/supabase-js": "^2.50.0",
@@ -61,6 +62,7 @@
     "concurrently": "^9.1.2",
     "eslint": "^9",
     "eslint-config-next": "15.2.4",
+    "jsdom": "^26.1.0",
     "tailwindcss": "^4",
     "typescript": "^5",
     "vitest": "^3.2.2"

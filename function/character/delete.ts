@@ -1,7 +1,7 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
-import { RegexScriptOperations } from "@/lib/data/regex-script-operation";
-import { WorldBookOperations } from "@/lib/data/world-book-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
+import { RegexScriptOperations } from "@/lib/data/roleplay/regex-script-operation";
+import { WorldBookOperations } from "@/lib/data/roleplay/world-book-operation";
 import { deleteBlob } from "@/lib/data/local-storage";
 
 export async function deleteCharacter(character_id: string): Promise<{ success?: boolean; error?: string }> {

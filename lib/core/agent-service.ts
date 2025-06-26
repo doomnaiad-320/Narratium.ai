@@ -1,9 +1,10 @@
-import { AgentEngine } from "./agent-engine";
-import { AgentConversationOperations } from "@/lib/data/agent-operation";
-import { AgentConversation, AgentTaskStatus } from "@/lib/models/agent-model";
+import { AgentEngine } from "@/lib/core/agent-engine";
+import { AgentConversationOperations } from "@/lib/data/agent/agent-conversation-operations";
+import { AgentConversation, AgentStatus } from "@/lib/models/agent-model";
 
 /**
  * Agent Service - High-level API for character+worldbook generation
+ * Simplified architecture with plan-based execution
  */
 export class AgentService {
   private engines: Map<string, AgentEngine> = new Map();
@@ -13,13 +14,14 @@ export class AgentService {
    */
   async startGeneration(
     title: string,
-    userInput: string,
+    userRequest: string,
     llmConfig: {
-      modelName: string;
-      apiKey: string;
-      baseUrl?: string;
-      llmType: "openai" | "ollama";
+      model_name: string;
+      api_key: string;
+      base_url?: string;
+      llm_type: "openai" | "ollama";
       temperature?: number;
+      max_tokens?: number;
     },
   ): Promise<{
     conversationId: string;
@@ -27,17 +29,29 @@ export class AgentService {
     result?: any;
     error?: string;
     needsUserInput?: boolean;
+    message?: string;
   }> {
     try {
-      // Create new conversation
-      const conversation = await AgentConversationOperations.createConversation(title);
+      // Create new conversation with proper LLM config format
+      const conversation = await AgentConversationOperations.createConversation(
+        title, 
+        userRequest, 
+        {
+          model_name: llmConfig.model_name,
+          api_key: llmConfig.api_key,
+          base_url: llmConfig.base_url,
+          llm_type: llmConfig.llm_type,
+          temperature: llmConfig.temperature || 0.7,
+          max_tokens: llmConfig.max_tokens,
+        },
+      );
       
-      // Create and initialize agent engine
-      const engine = new AgentEngine(conversation.id, llmConfig);
+      // Create and start agent engine
+      const engine = new AgentEngine(conversation.id);
       this.engines.set(conversation.id, engine);
       
-      // Execute workflow
-      const result = await engine.executeWorkflow(userInput);
+      // Start execution
+      const result = await engine.start();
       
       return {
         conversationId: conversation.id,
@@ -45,6 +59,7 @@ export class AgentService {
         result: result.result,
         error: result.error,
         needsUserInput: result.needsUserInput || false,
+        message: result.message,
       };
       
     } catch (error) {
@@ -68,29 +83,25 @@ export class AgentService {
     result?: any;
     error?: string;
     needsUserInput?: boolean;
+    message?: string;
   }> {
     try {
       let engine = this.engines.get(conversationId);
       
       if (!engine) {
-        // Recreate engine from conversation data
-        const conversation = await AgentConversationOperations.getConversationById(conversationId);
-        if (!conversation) {
-          throw new Error("Conversation not found");
-        }
-        
-        // Would need to reconstruct LLM config from conversation metadata
-        // For now, throw error - in production you'd store LLM config in conversation
-        throw new Error("Engine not found and cannot reconstruct LLM config");
+        // Recreate engine if not in memory
+        engine = new AgentEngine(conversationId);
+        this.engines.set(conversationId, engine);
       }
       
-      const result = await engine.continueWorkflow(userResponse);
+      const result = await engine.continueWithUserInput(userResponse);
       
       return {
         success: result.success,
         result: result.result,
         error: result.error,
         needsUserInput: result.needsUserInput || false,
+        message: result.message,
       };
       
     } catch (error) {
@@ -103,47 +114,70 @@ export class AgentService {
   }
 
   /**
-   * Get conversation status and messages
+   * Get conversation status and progress
    */
   async getConversationStatus(conversationId: string): Promise<{
     conversation: AgentConversation | null;
-    messages: any[];
-    currentStep?: string;
-    progress?: number;
+    status: AgentStatus;
+    progress: {
+      currentTasks: number;
+      completedTasks: number;
+      totalIterations: number;
+      currentFocus: string;
+    };
+    hasResult: boolean;
+    result?: any;
   }> {
     try {
       const conversation = await AgentConversationOperations.getConversationById(conversationId);
       if (!conversation) {
         return {
           conversation: null,
-          messages: [],
+          status: AgentStatus.FAILED,
+          progress: {
+            currentTasks: 0,
+            completedTasks: 0,
+            totalIterations: 0,
+            currentFocus: "Conversation not found",
+          },
+          hasResult: false,
         };
       }
       
-      const messages = await AgentConversationOperations.getConversationHistory(conversationId);
-      const currentSteps = await AgentConversationOperations.getCurrentSteps(conversationId);
-      
-      // Calculate progress based on steps completed
-      const totalExpectedSteps = 6; // ANALYZE, SEARCH, PLAN, OUTPUT, VALIDATE, REFINE
-      const completedSteps = currentSteps.filter(step => step.status === AgentTaskStatus.COMPLETED).length;
-      const progress = Math.min((completedSteps / totalExpectedSteps) * 100, 100);
-      
-      const currentStep = currentSteps.length > 0 
-        ? currentSteps[currentSteps.length - 1]?.capability 
-        : undefined;
+      const hasCharacterData = !!conversation.result.character_data;
+      const hasWorldbookData = !!conversation.result.worldbook_data && conversation.result.worldbook_data.length > 0;
+      const hasResult = hasCharacterData && hasWorldbookData;
       
       return {
         conversation,
-        messages,
-        currentStep,
-        progress,
+        status: conversation.status,
+        progress: {
+          currentTasks: conversation.plan_pool.current_tasks.length,
+          completedTasks: conversation.plan_pool.completed_tasks.length,
+          totalIterations: conversation.context.current_iteration,
+          currentFocus: conversation.plan_pool.context.current_focus,
+        },
+        hasResult,
+        result: hasResult ? {
+          character_data: conversation.result.character_data,
+          worldbook_data: conversation.result.worldbook_data,
+          integration_notes: conversation.result.integration_notes,
+          quality_metrics: conversation.result.quality_metrics,
+        } : undefined,
       };
       
     } catch (error) {
       console.error("Failed to get conversation status:", error);
       return {
         conversation: null,
-        messages: [],
+        status: AgentStatus.FAILED,
+        progress: {
+          currentTasks: 0,
+          completedTasks: 0,
+          totalIterations: 0,
+          currentFocus: "Error occurred",
+        },
+        hasResult: false,
       };
     }
   }
@@ -177,6 +211,78 @@ export class AgentService {
   }
 
   /**
+   * Get conversation messages for UI display
+   */
+  async getConversationMessages(conversationId: string): Promise<{
+    messages: any[];
+    thoughts: any[];
+    currentReasoning: string;
+  }> {
+    try {
+      const conversation = await AgentConversationOperations.getConversationById(conversationId);
+      if (!conversation) {
+        return {
+          messages: [],
+          thoughts: [],
+          currentReasoning: "",
+        };
+      }
+      
+      return {
+        messages: conversation.messages,
+        thoughts: conversation.thought_buffer.thoughts,
+        currentReasoning: conversation.thought_buffer.current_reasoning,
+      };
+      
+    } catch (error) {
+      console.error("Failed to get conversation messages:", error);
+      return {
+        messages: [],
+        thoughts: [],
+        currentReasoning: "",
+      };
+    }
+  }
+
+  /**
+   * Get plan status for debugging
+   */
+  async getPlanStatus(conversationId: string): Promise<{
+    goalTree: any[];
+    currentTasks: any[];
+    completedTasks: any[];
+    context: any;
+  }> {
+    try {
+      const conversation = await AgentConversationOperations.getConversationById(conversationId);
+      if (!conversation) {
+        return {
+          goalTree: [],
+          currentTasks: [],
+          completedTasks: [],
+          context: {},
+        };
+      }
+      
+      return {
+        goalTree: conversation.plan_pool.goal_tree,
+        currentTasks: conversation.plan_pool.current_tasks,
+        completedTasks: conversation.plan_pool.completed_tasks,
+        context: conversation.plan_pool.context,
+      };
+      
+    } catch (error) {
+      console.error("Failed to get plan status:", error);
+      return {
+        goalTree: [],
+        currentTasks: [],
+        completedTasks: [],
+        context: {},
+      };
+    }
+  }
+
+  /**
    * Export conversation data
    */
   async exportConversation(conversationId: string): Promise<{
@@ -193,14 +299,10 @@ export class AgentService {
         };
       }
       
-      const messages = await AgentConversationOperations.getConversationHistory(conversationId);
-      const steps = await AgentConversationOperations.getCurrentSteps(conversationId);
-      
       const exportData = {
         conversation,
-        messages,
-        steps,
         exportedAt: new Date().toISOString(),
+        version: "2.0", // New architecture version
       };
       
       return {
@@ -224,37 +326,46 @@ export class AgentService {
     totalConversations: number;
     completedGenerations: number;
     successRate: number;
-    averageStepsPerGeneration: number;
-    mostUsedTools: Array<{ toolId: string; usage: number }>;
+    averageIterations: number;
+    statusBreakdown: Record<string, number>;
   }> {
     try {
       const conversations = await AgentConversationOperations.getAllConversations();
-      const stats = await AgentConversationOperations.getConversationStats();
       
-      const completedGenerations = stats.completedWithBothData;
+      const statusBreakdown: Record<string, number> = {};
+      let totalIterations = 0;
+      let completedGenerations = 0;
+      
+      conversations.forEach(conv => {
+        // Count by status
+        statusBreakdown[conv.status] = (statusBreakdown[conv.status] || 0) + 1;
+        
+        // Count iterations
+        totalIterations += conv.context.current_iteration;
+        
+        // Count completed generations
+        if (conv.status === AgentStatus.COMPLETED && 
+            conv.result.character_data && 
+            conv.result.worldbook_data && 
+            conv.result.worldbook_data.length > 0) {
+          completedGenerations++;
+        }
+      });
+      
       const successRate = conversations.length > 0 
         ? (completedGenerations / conversations.length) * 100 
         : 0;
-      
-      // Calculate average steps per generation
-      let totalSteps = 0;
-      for (const conv of conversations) {
-        const steps = await AgentConversationOperations.getCurrentSteps(conv.id);
-        totalSteps += steps.length;
-      }
-      const averageStepsPerGeneration = conversations.length > 0 
-        ? totalSteps / conversations.length 
+        
+      const averageIterations = conversations.length > 0 
+        ? totalIterations / conversations.length 
         : 0;
-      
-      // Get tool usage data (simplified for now)
-      const mostUsedTools: Array<{ toolId: string; usage: number }> = [];
       
       return {
         totalConversations: conversations.length,
         completedGenerations,
         successRate,
-        averageStepsPerGeneration,
-        mostUsedTools,
+        averageIterations,
+        statusBreakdown,
       };
       
     } catch (error) {
@@ -263,8 +374,8 @@ export class AgentService {
         totalConversations: 0,
         completedGenerations: 0,
         successRate: 0,
-        averageStepsPerGeneration: 0,
-        mostUsedTools: [],
+        averageIterations: 0,
+        statusBreakdown: {},
       };
     }
   }
@@ -286,3 +397,4 @@ export class AgentService {
 
 // Singleton instance
 export const agentService = new AgentService(); 
+ 

@@ -1,6 +1,6 @@
 import { readData, writeData, CHARACTERS_RECORD_FILE } from "@/lib/data/local-storage";
 import { RawCharacterData } from "@/lib/models/rawdata-model";
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 
 export interface CharacterRecord {
   id: string;

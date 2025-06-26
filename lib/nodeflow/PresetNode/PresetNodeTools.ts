@@ -1,7 +1,7 @@
 import { NodeTool } from "@/lib/nodeflow/NodeTool";
-import { PresetOperations } from "@/lib/data/preset-operation";
+import { PresetOperations } from "@/lib/data/roleplay/preset-operation";
 import { PresetAssembler } from "@/lib/core/preset-assembler";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { Character } from "@/lib/core/character";
 
 export class PresetNodeTools extends NodeTool {

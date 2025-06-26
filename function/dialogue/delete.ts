@@ -1,4 +1,4 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 
 interface DeleteDialogueNodeOptions {
   characterId: string;

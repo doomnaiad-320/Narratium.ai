@@ -1,4 +1,4 @@
-import { WorldBookOperations, WorldBookSettings } from "@/lib/data/world-book-operation";
+import { WorldBookOperations, WorldBookSettings } from "@/lib/data/roleplay/world-book-operation";
 import { WorldBookEntry } from "@/lib/models/world-book-model";
 
 export interface GlobalWorldBook {

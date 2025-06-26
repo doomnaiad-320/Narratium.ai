@@ -82,6 +82,7 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
   const [editingConfigId, setEditingConfigId] = useState<string>("");
   const [editingName, setEditingName] = useState("");
   const [showEditHint, setShowEditHint] = useState(true);
+  const [isConfigHovered, setIsConfigHovered] = useState(false);
   
   const [llmType, setLlmType] = useState<LLMType>("openai");
   const [baseUrl, setBaseUrl] = useState("");
@@ -159,6 +160,30 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
     }
   }, []);
 
+  // Listen for API config changes from other components
+  useEffect(() => {
+    const handleApiConfigChanged = (event: CustomEvent) => {
+      const { configId } = event.detail;
+      console.log("ModelSidebar: Received apiConfigChanged event", configId, "current:", activeConfigId);
+      if (configId && configId !== activeConfigId) {
+        const selectedConfig = configs.find(c => c.id === configId);
+        if (selectedConfig) {
+          console.log("ModelSidebar: Switching to config", selectedConfig);
+          setActiveConfigId(configId);
+          loadConfigToForm(selectedConfig);
+        } else {
+          console.error("ModelSidebar: Config not found for id", configId);
+        }
+      }
+    };
+
+    window.addEventListener("apiConfigChanged", handleApiConfigChanged as EventListener);
+
+    return () => {
+      window.removeEventListener("apiConfigChanged", handleApiConfigChanged as EventListener);
+    };
+  }, [configs, activeConfigId]);
+
   /**
    * Loads a configuration into the form fields
    * @param {APIConfig} config - The configuration to load
@@ -168,6 +193,19 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
     setBaseUrl(config.baseUrl);
     setModel(config.model);
     setApiKey(config.apiKey || "");
+    
+    // Update localStorage with the selected configuration
+    localStorage.setItem("llmType", config.type);
+    localStorage.setItem(config.type === "openai" ? "openaiBaseUrl" : "ollamaBaseUrl", config.baseUrl);
+    localStorage.setItem(config.type === "openai" ? "openaiModel" : "ollamaModel", config.model);
+    localStorage.setItem("modelName", config.model);
+    localStorage.setItem("modelBaseUrl", config.baseUrl);
+    
+    if (config.type === "openai" && config.apiKey) {
+      localStorage.setItem("openaiApiKey", config.apiKey);
+      localStorage.setItem("apiKey", config.apiKey);
+    }
+    
     if (config.baseUrl && config.apiKey) {
       handleGetModelList(config.baseUrl, config.apiKey);
     }
@@ -361,12 +399,22 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
   const handleSwitchConfig = (id: string) => {
     if (id === activeConfigId) return;
     
+    console.log("ModelSidebar: Switching config from", activeConfigId, "to", id);
     setActiveConfigId(id);
     const selectedConfig = configs.find(config => config.id === id);
     if (selectedConfig) {
+      console.log("ModelSidebar: Loading config to form", selectedConfig);
       loadConfigToForm(selectedConfig);
       localStorage.setItem("activeConfigId", id);
       setShowNewConfigForm(false);
+      
+      // Dispatch custom event to notify other components
+      console.log("ModelSidebar: Dispatching apiConfigChanged event");
+      window.dispatchEvent(new CustomEvent("apiConfigChanged", { 
+        detail: { configId: id, config: selectedConfig }, 
+      }));
+    } else {
+      console.error("ModelSidebar: Config not found for id", id);
     }
   };
 
@@ -408,7 +456,6 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
     e.stopPropagation();
     setEditingConfigId(config.id);
     setEditingName(config.name);
-    setShowEditHint(false);
   };
 
   /**
@@ -533,6 +580,14 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                   </button>
                 </div>
                 
+                {!showNewConfigForm && configs.length > 0 && (
+                  <div className="mb-2">
+                    <p className={`text-sm italic transition-colors duration-200 ${isConfigHovered ? "text-[#d1a35c]" : "text-[#8a8a8a]"}`}>
+                      {t("modelSettings.doubleClickToEditName") || "Double-click configuration name to edit"}
+                    </p>
+                  </div>
+                )}
+                
                 {configs.length > 0 && (
                   <div className="mb-4 space-y-2 max-h-48 overflow-y-auto fantasy-scrollbar">
                     {configs.map((config, idx) => (
@@ -544,6 +599,8 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                             : "bg-[#292929] hover:bg-[#333333] border border-transparent hover:border-[#534741]"
                         }`}
                         onClick={() => handleSwitchConfig(config.id)}
+                        onMouseEnter={() => setIsConfigHovered(true)}
+                        onMouseLeave={() => setIsConfigHovered(false)}
                       >
                         <div className="relative flex items-center flex-1 min-w-0 group/name">
                           {editingConfigId === config.id ? (
@@ -565,9 +622,9 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                               >
                                 {config.name}
                               </span>
-                              {showEditHint && (
+                              {showEditHint && configs.length > 1 && (
                                 <span
-                                  className={`absolute ${idx === 0 ? "top-full mt-1" : "-top-8"} left-0 z-20 bg-[#2a2522] text-[#d1a35c] text-xs px-2 py-1 rounded border border-[#d1a35c] whitespace-nowrap opacity-0 group-hover/name:opacity-100 transition-all duration-200 pointer-events-none shadow-[0_0_8px_rgba(209,163,92,0.2)]`}
+                                  className={`absolute ${idx === 0 ? "top-full mt-1" : "-top-8"} left-0 z-[9999] bg-[#2a2522] text-[#d1a35c] text-xs px-2 py-1 rounded border border-[#d1a35c] whitespace-nowrap opacity-0 group-hover/name:opacity-100 transition-all duration-200 pointer-events-none shadow-[0_0_8px_rgba(209,163,92,0.2)]`}
                                 >
                                   {t("modelSettings.doubleClickToEditName")}
                                 </span>
@@ -880,7 +937,7 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
               {configs.length === 0 && !showNewConfigForm && (
                 <div className="flex flex-col items-center justify-center py-8">
                   <p className="text-sm text-[#8a8a8a] mb-4 text-center">
-                    {t("modelSettings.noConfigs") || "No API configurations yet"}
+                    {t("modelSettings.noConfigs")}
                   </p>
                   <button
                     onClick={(e) => { trackButtonClick("ModelSidebar", "创建第一个配置"); e.stopPropagation(); handleCreateConfig(); }}
@@ -936,6 +993,14 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
               </button>
             </div>
             
+            {!showNewConfigForm && configs.length > 0 && (
+              <div className="mb-1.5 sm:mb-1.5 mb-1">
+                <p className={`text-xs sm:text-xs text-[10px] italic transition-colors duration-200 ${isConfigHovered ? "text-[#d1a35c]" : "text-[#8a8a8a]"}`}>
+                  {t("modelSettings.doubleClickToEditName") || "Double-click configuration name to edit"}
+                </p>
+              </div>
+            )}
+            
             {configs.length > 0 && (
               <div className="mb-3 sm:mb-3 mb-2 flex flex-col gap-1.5 sm:gap-1.5 gap-1 max-h-50 overflow-y-auto fantasy-scrollbar pr-1">
                 {configs.map((config, idx) => (
@@ -947,6 +1012,8 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                         : "bg-[#292929] hover:bg-[#333333] border border-transparent hover:border-[#534741]"
                     }`}
                     onClick={() => handleSwitchConfig(config.id)}
+                    onMouseEnter={() => setIsConfigHovered(true)}
+                    onMouseLeave={() => setIsConfigHovered(false)}
                   >
                     <div className="relative flex items-center flex-1 min-w-0 group/name">
                       {editingConfigId === config.id ? (
@@ -968,9 +1035,9 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
                           >
                             {config.name}
                           </span>
-                          {showEditHint && (
+                          {showEditHint && configs.length > 1 && (
                             <span
-                              className={`absolute ${idx === 0 ? "top-full mt-1" : "-top-6"} left-0 z-20 bg-[#2a2522] text-[#d1a35c] text-[10px] sm:text-[10px] text-[8px] px-2 py-1 sm:px-2 sm:py-1 px-1 py-0.5 rounded border border-[#d1a35c] whitespace-nowrap opacity-0 group-hover/name:opacity-100 transition-all duration-200 pointer-events-none shadow-[0_0_8px_rgba(209,163,92,0.2)]`}
+                              className={`absolute ${idx === 0 ? "top-full mt-1" : "-top-6"} left-0 z-[9999] bg-[#2a2522] text-[#d1a35c] text-[10px] sm:text-[10px] text-[8px] px-2 py-1 sm:px-2 sm:py-1 px-1 py-0.5 rounded border border-[#d1a35c] whitespace-nowrap opacity-0 group-hover/name:opacity-100 transition-all duration-200 pointer-events-none shadow-[0_0_8px_rgba(209,163,92,0.2)]`}
                             >
                               {t("modelSettings.doubleClickToEditName")}
                             </span>
@@ -1285,7 +1352,7 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
           {configs.length === 0 && !showNewConfigForm && (
             <div className="flex flex-col items-center justify-center py-3 sm:py-3 py-2">
               <p className="text-xs sm:text-xs text-[10px] text-[#8a8a8a] mb-2 sm:mb-2 mb-1">
-                {t("modelSettings.noConfigs") || "No API configurations yet"}
+                {t("modelSettings.noConfigs")}
               </p>
               <button
                 onClick={(e) => { trackButtonClick("ModelSidebar", "创建第一个配置"); e.stopPropagation(); handleCreateConfig(); }}

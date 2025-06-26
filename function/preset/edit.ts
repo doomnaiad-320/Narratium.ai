@@ -1,4 +1,4 @@
-import { PresetOperations } from "@/lib/data/preset-operation";
+import { PresetOperations } from "@/lib/data/roleplay/preset-operation";
 
 export async function deletePromptFromPreset(
   presetId: string,

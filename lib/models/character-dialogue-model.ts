@@ -1,5 +1,4 @@
 import { ParsedResponse } from "@/lib/models/parsed-response";
-import { PromptType } from "@/lib/models/character-prompts-model";
 
 export interface DialogueMessage {
   role: "user" | "assistant" | "system" | "sample";
@@ -17,7 +16,6 @@ export interface DialogueOptions {
   maxTokens?: number;
   streaming?: boolean;
   language?: "zh" | "en";
-  promptType?: PromptType;
   contextWindow?: number;
 }
 

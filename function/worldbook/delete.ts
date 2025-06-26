@@ -1,4 +1,4 @@
-import { WorldBookOperations } from "@/lib/data/world-book-operation";
+import { WorldBookOperations } from "@/lib/data/roleplay/world-book-operation";
 
 export async function deleteWorldBookEntry(characterId: string, entryId: string) {
   if (!characterId || !entryId) {

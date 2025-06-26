@@ -22,6 +22,7 @@ export class ContextNode extends NodeBase {
   protected async _call(input: NodeInput): Promise<NodeOutput> {
     const userMessage = input.userMessage;
     const characterId = input.characterId;
+    const userInput = input.userInput;
     const memoryLength = input.memoryLength || 10;
 
     if (!userMessage) {
@@ -32,6 +33,7 @@ export class ContextNode extends NodeBase {
       throw new Error("Character ID is required for ContextNode");
     }
 
+    // Assemble chat history for {{chatHistory}} placeholder
     const result = await this.executeTool(
       "assembleChatHistory",
       userMessage,
@@ -39,10 +41,17 @@ export class ContextNode extends NodeBase {
       memoryLength,
     ) as { userMessage: string; messages: DialogueMessage[] };
 
+    // Generate conversation context for memory system
+    const conversationContext = await this.executeTool(
+      "generateConversationContext",
+      characterId,
+      userInput || "",
+      3, // Use shorter context for memory
+    ) as string;
+
     return {
       userMessage: result.userMessage,
-      characterId,
-      memoryLength,
+      conversationContext,
     };
   }
 } 

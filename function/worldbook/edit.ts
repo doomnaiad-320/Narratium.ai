@@ -1,4 +1,4 @@
-import { WorldBookOperations } from "@/lib/data/world-book-operation";
+import { WorldBookOperations } from "@/lib/data/roleplay/world-book-operation";
 import { WorldBookEntry } from "@/lib/models/world-book-model";
 
 export async function saveAdvancedWorldBookEntry(

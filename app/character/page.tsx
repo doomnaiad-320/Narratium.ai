@@ -28,7 +28,6 @@ import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import { useLanguage } from "@/app/i18n";
 import CharacterSidebar from "@/components/CharacterSidebar";
-import { PromptType } from "@/lib/models/character-prompts-model";
 import { v4 as uuidv4 } from "uuid";
 import { initCharacterDialogue } from "@/function/dialogue/init";
 import { getCharacterDialogue } from "@/function/dialogue/info";
@@ -373,7 +372,6 @@ export default function CharacterPage() {
       const modelName = localStorage.getItem(llmType === "openai" ? "openaiModel" : "ollamaModel") || "";
       const baseUrl = localStorage.getItem(llmType === "openai" ? "openaiBaseUrl" : "ollamaBaseUrl") || "";
       const apiKey = llmType === "openai" ? (localStorage.getItem("openaiApiKey") || "") : "";
-      const promptType = localStorage.getItem("promptType");
       const storedNumber = localStorage.getItem("responseLength");
       const username = localStorage.getItem("username") || "";
       const responseLength = storedNumber ? parseInt(storedNumber) : 200;
@@ -389,7 +387,6 @@ export default function CharacterPage() {
         llmType,
         language: language as "zh" | "en",
         streaming: true,
-        promptType: promptType as PromptType,
         number: responseLength,
         nodeId,
         fastModel: fastModel,

@@ -1,8 +1,7 @@
 import { Character } from "@/lib/core/character";
 import { CharacterDialogue } from "@/lib/core/character-dialogue";
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
-import { PromptType } from "@/lib/models/character-prompts-model";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { adaptText } from "@/lib/adapter/tagReplacer";
 import { RegexProcessor } from "@/lib/core/regex-processor";
 
@@ -38,7 +37,6 @@ export async function initCharacterDialogue(options: InitCharacterDialogueOption
       apiKey,
       llmType,
       language,
-      promptType: PromptType.COMPANION,
     });
 
     const firstAssistantMessage = await dialogue.getFirstMessage();

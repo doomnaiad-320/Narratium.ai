@@ -1,5 +1,5 @@
 import { importPresetFromJson } from "@/function/preset/import";
-import { PresetOperations } from "@/lib/data/preset-operation";
+import { PresetOperations } from "@/lib/data/roleplay/preset-operation";
 
 interface GithubPreset {
   name: string;

@@ -1,8 +1,8 @@
 import { parseCharacterCard } from "@/utils/character-parser";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { setBlob } from "@/lib/data/local-storage";
-import { WorldBookOperations } from "@/lib/data/world-book-operation";
-import { RegexScriptOperations } from "@/lib/data/regex-script-operation";
+import { WorldBookOperations } from "@/lib/data/roleplay/world-book-operation";
+import { RegexScriptOperations } from "@/lib/data/roleplay/regex-script-operation";
 import { RegexScript } from "@/lib/models/regex-script-model";
 import { v4 as uuidv4 } from "uuid";
 

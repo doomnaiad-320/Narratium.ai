@@ -1,5 +1,5 @@
 import { RegexScriptSettings } from "@/lib/models/regex-script-model";
-import { RegexScriptOperations } from "@/lib/data/regex-script-operation";  
+import { RegexScriptOperations } from "@/lib/data/roleplay/regex-script-operation";  
 
 export async function deleteRegexScript(characterId: string, scriptId: string): Promise<boolean> {
   try {

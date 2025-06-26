@@ -12,10 +12,3 @@ export interface CharacterPromptParams {
   userInput?: string;
   sampleStatus?: string;
 }
-
-export enum PromptType {
-  COMPANION = "companion",
-  NSFW = "nsfw",
-  EXPLICIT = "explicit",
-  CUSTOM = "custom"
-}

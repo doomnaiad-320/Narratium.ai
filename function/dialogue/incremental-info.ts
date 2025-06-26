@@ -1,5 +1,5 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 
 interface IncrementalDialogueParams {
   characterId: string;

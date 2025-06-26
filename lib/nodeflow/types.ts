@@ -1,7 +1,8 @@
 export enum NodeCategory {
   ENTRY = "entry",
   MIDDLE = "middle", 
-  EXIT = "exit"
+  EXIT = "exit",
+  AFTER = "after" // Background execution after main workflow completes
 }
 
 export interface NodeConfig {

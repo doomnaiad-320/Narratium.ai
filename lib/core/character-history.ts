@@ -1,6 +1,6 @@
 import { DialogueMessage } from "@/lib/models/character-dialogue-model";
 
-class DialogueStory {
+export class DialogueStory {
   language: string;
   userInput: string[];
   responses: string[];

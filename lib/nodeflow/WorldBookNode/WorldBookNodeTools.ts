@@ -2,8 +2,8 @@ import { NodeTool } from "@/lib/nodeflow/NodeTool";
 import { Character } from "@/lib/core/character";
 import { PromptAssembler } from "@/lib/core/prompt-assembler";
 import { DialogueMessage } from "@/lib/models/character-dialogue-model";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 
 export class WorldBookNodeTools extends NodeTool {
   protected static readonly toolType: string = "worldBook";

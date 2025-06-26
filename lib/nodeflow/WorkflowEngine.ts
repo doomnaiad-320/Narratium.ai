@@ -7,7 +7,15 @@ import {
   WorkflowConfig,
   NodeExecutionStatus,
   WorkflowExecutionResult,
+  NodeCategory,
 } from "@/lib/nodeflow/types";
+
+export interface WorkflowExecutionOptions {
+  executeAfterNodes?: boolean; // Whether to execute AFTER nodes (default: true)
+  awaitAfterNodes?: boolean; // Whether to wait for AFTER nodes completion (default: false)
+}
+
+export { NodeCategory } from "@/lib/nodeflow/types";
 
 export class WorkflowEngine {
   private config: WorkflowConfig;
@@ -54,6 +62,13 @@ export class WorkflowEngine {
       .filter(Boolean);
   }
 
+  private getNodesByCategory(category: NodeCategory): NodeBase[] {
+    return this.config.nodes
+      .filter(nodeConfig => nodeConfig.category === category)
+      .map(nodeConfig => this.nodes.get(nodeConfig.id)!)
+      .filter(Boolean);
+  }
+
   private getNextNodes(nodeId: string): NodeBase[] {
     const node = this.nodes.get(nodeId);
     if (!node) return [];
@@ -82,10 +97,15 @@ export class WorkflowEngine {
     );
   }
 
+  /**
+   * Execute main workflow until EXIT nodes, then optionally execute AFTER nodes in background
+   */
   async execute(
     initialWorkflowInput: NodeInput,
     context?: NodeContext,
+    options: WorkflowExecutionOptions = {},
   ): Promise<WorkflowExecutionResult> {
+    const { executeAfterNodes = true, awaitAfterNodes = false } = options;
     const ctx = context || new NodeContext();
     const startTime = new Date();
     const result: WorkflowExecutionResult = {
@@ -96,28 +116,106 @@ export class WorkflowEngine {
     };
 
     try {
+      // Set initial input
       for (const key in initialWorkflowInput) {
         ctx.setInput(key, initialWorkflowInput[key]);
       }
 
-      const entryNodes = this.getEntryNodes();
-      if (entryNodes.length === 0) {
-        throw new Error("No entry nodes found in workflow");
+      // Execute main workflow (ENTRY -> MIDDLE -> EXIT)
+      const mainWorkflowResult = await this.executeMainWorkflow(ctx);
+      
+      // Set main workflow results
+      result.outputData = mainWorkflowResult.outputData;
+      result.status = mainWorkflowResult.status;
+
+      // Handle AFTER nodes
+      if (executeAfterNodes) {
+        const afterNodesPromise = this.executeAfterNodes(ctx);
+        
+        if (awaitAfterNodes) {
+          // Wait for AFTER nodes to complete before returning
+          await afterNodesPromise;
+        } else {
+          // Execute AFTER nodes in background (fire and forget)
+          afterNodesPromise.catch(error => {
+            console.error("AFTER nodes execution failed:", error);
+          });
+        }
       }
-      
-      await this.executeParallel(entryNodes, ctx);
 
-      const processedNodes = new Set<string>();
-      entryNodes.forEach(node => processedNodes.add(node.getId()));
+    } catch (error) {
+      result.status = NodeExecutionStatus.FAILED;
+    } finally {
+      result.endTime = new Date();
+    }
 
-      const queue: Array<{
-        nodes: NodeBase[];
-      }> = [];
+    return result;
+  }
+
+  /**
+   * Execute main workflow from ENTRY to EXIT nodes
+   */
+  private async executeMainWorkflow(context: NodeContext): Promise<{
+    status: NodeExecutionStatus;
+    outputData: Record<string, any>;
+  }> {
+    const entryNodes = this.getEntryNodes();
+    if (entryNodes.length === 0) {
+      throw new Error("No entry nodes found in workflow");
+    }
+    
+    await this.executeParallel(entryNodes, context);
+
+    const processedNodes = new Set<string>();
+    entryNodes.forEach(node => processedNodes.add(node.getId()));
+
+    const queue: Array<{
+      nodes: NodeBase[];
+    }> = [];
+    
+    // Add initial next nodes to queue
+    const nextLevelNodesSet = new Set<NodeBase>();
+    entryNodes.forEach(node => {
+      this.getNextNodes(node.getId()).forEach(nextNode => {
+        // Skip AFTER nodes in main workflow
+        const nodeConfig = this.config.nodes.find(n => n.id === nextNode.getId());
+        if (nodeConfig?.category !== NodeCategory.AFTER && !processedNodes.has(nextNode.getId())) {
+          nextLevelNodesSet.add(nextNode);
+        }
+      });
+    });
+    if (nextLevelNodesSet.size > 0) {
+      queue.push({ nodes: Array.from(nextLevelNodesSet) });
+    }
+
+    // Process nodes level by level until EXIT nodes
+    while (queue.length > 0) {
+      const currentBatch = queue.shift()!;
+      const nodesToExecuteInBatch = currentBatch.nodes.filter(node => !processedNodes.has(node.getId()));
       
+      if (nodesToExecuteInBatch.length === 0) continue;
+
+      await this.executeParallel(nodesToExecuteInBatch, context);
+
+      nodesToExecuteInBatch.forEach(node => processedNodes.add(node.getId()));
+
+      // Check if we have reached EXIT nodes
+      const hasExitNodes = nodesToExecuteInBatch.some(node => {
+        const nodeConfig = this.config.nodes.find(n => n.id === node.getId());
+        return nodeConfig?.category === NodeCategory.EXIT;
+      });
+
+      // If we reached EXIT nodes, stop main workflow execution
+      if (hasExitNodes) {
+        break;
+      }
+
+      // Add next level nodes (excluding AFTER nodes)
       const nextLevelNodesSet = new Set<NodeBase>();
-      entryNodes.forEach(node => {
+      nodesToExecuteInBatch.forEach(node => {
         this.getNextNodes(node.getId()).forEach(nextNode => {
-          if (!processedNodes.has(nextNode.getId())) {
+          const nodeConfig = this.config.nodes.find(n => n.id === nextNode.getId());
+          if (nodeConfig?.category !== NodeCategory.AFTER && !processedNodes.has(nextNode.getId())) {
             nextLevelNodesSet.add(nextNode);
           }
         });
@@ -125,40 +223,34 @@ export class WorkflowEngine {
       if (nextLevelNodesSet.size > 0) {
         queue.push({ nodes: Array.from(nextLevelNodesSet) });
       }
-
-      while (queue.length > 0) {
-        const currentBatch = queue.shift()!;
-        const nodesToExecuteInBatch = currentBatch.nodes.filter(node => !processedNodes.has(node.getId()));
-        
-        if (nodesToExecuteInBatch.length === 0) continue;
-
-        await this.executeParallel(nodesToExecuteInBatch, ctx);
-
-        nodesToExecuteInBatch.forEach(node => processedNodes.add(node.getId()));
-
-        const nextLevelNodesSet = new Set<NodeBase>();
-        nodesToExecuteInBatch.forEach(node => {
-          this.getNextNodes(node.getId()).forEach(nextNode => {
-            if (!processedNodes.has(nextNode.getId())) {
-              nextLevelNodesSet.add(nextNode);
-            }
-          });
-        });
-        if (nextLevelNodesSet.size > 0) {
-          queue.push({ nodes: Array.from(nextLevelNodesSet) });
-        }
-      }
-
-      result.status = NodeExecutionStatus.COMPLETED;
-    } catch (error) {
-      result.status = NodeExecutionStatus.FAILED;
-    } finally {
-      result.endTime = new Date();
-      result.results = [];
-      result.outputData = ctx.toJSON().outputStore;
     }
 
-    return result;
+    return {
+      status: NodeExecutionStatus.COMPLETED,
+      outputData: context.toJSON().outputStore,
+    };
+  }
+
+  /**
+   * Execute AFTER nodes in background
+   */
+  private async executeAfterNodes(context: NodeContext): Promise<void> {
+    const afterNodes = this.getNodesByCategory(NodeCategory.AFTER);
+    
+    if (afterNodes.length === 0) {
+      return;
+    }
+
+    console.log(`Executing ${afterNodes.length} AFTER nodes in background...`);
+    
+    try {
+      // Execute all AFTER nodes in parallel
+      await this.executeParallel(afterNodes, context);
+      console.log("AFTER nodes execution completed successfully");
+    } catch (error) {
+      console.error("AFTER nodes execution failed:", error);
+      throw error;
+    }
   }
 
   async *executeAsync(

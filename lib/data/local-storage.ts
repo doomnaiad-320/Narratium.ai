@@ -1,5 +1,6 @@
 const DB_NAME = "CharacterAppDB";
-const DB_VERSION = 8; // Updated for Agent support
+
+const DB_VERSION = 10;
 
 export const CHARACTERS_RECORD_FILE = "characters_record";
 export const CHARACTER_DIALOGUES_FILE = "character_dialogues";
@@ -10,6 +11,10 @@ export const PRESET_FILE = "preset_data";
 
 // Agent-related storage constants  
 export const AGENT_CONVERSATIONS_FILE = "agent_conversations";
+
+// Memory/RAG storage constants
+export const MEMORY_ENTRIES_FILE = "memory_entries";
+export const MEMORY_EMBEDDINGS_FILE = "memory_embeddings";
 
 function openDB(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -41,6 +46,13 @@ function openDB(): Promise<IDBDatabase> {
       // Agent-related object stores
       if (!db.objectStoreNames.contains(AGENT_CONVERSATIONS_FILE)) {
         db.createObjectStore(AGENT_CONVERSATIONS_FILE);
+      }
+      // Memory/RAG object stores
+      if (!db.objectStoreNames.contains(MEMORY_ENTRIES_FILE)) {
+        db.createObjectStore(MEMORY_ENTRIES_FILE);
+      }
+      if (!db.objectStoreNames.contains(MEMORY_EMBEDDINGS_FILE)) {
+        db.createObjectStore(MEMORY_EMBEDDINGS_FILE);
       }
     };
   });
@@ -83,6 +95,8 @@ export async function initializeDataFiles(): Promise<void> {
     PRESET_FILE,
     REGEX_SCRIPTS_FILE,
     AGENT_CONVERSATIONS_FILE,
+    MEMORY_ENTRIES_FILE,
+    MEMORY_EMBEDDINGS_FILE,
   ];
 
   await Promise.all(storeNames.map(storeName => {
@@ -154,6 +168,8 @@ export async function exportAllData(): Promise<Record<string, any>> {
     WORLD_BOOK_FILE,
     REGEX_SCRIPTS_FILE,
     AGENT_CONVERSATIONS_FILE,
+    MEMORY_ENTRIES_FILE,
+    MEMORY_EMBEDDINGS_FILE,
   ];
 
   for (const storeName of regularStores) {
@@ -201,6 +217,8 @@ export async function importAllData(data: Record<string, any>): Promise<void> {
     WORLD_BOOK_FILE,
     REGEX_SCRIPTS_FILE,
     AGENT_CONVERSATIONS_FILE,
+    MEMORY_ENTRIES_FILE,
+    MEMORY_EMBEDDINGS_FILE,
   ];
 
   for (const storeName of regularStores) {

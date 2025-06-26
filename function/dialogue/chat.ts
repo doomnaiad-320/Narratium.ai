@@ -1,5 +1,4 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
-import { PromptType } from "@/lib/models/character-prompts-model";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 import { ParsedResponse } from "@/lib/models/parsed-response";
 import { DialogueWorkflow, DialogueWorkflowParams } from "@/lib/workflow/examples/DialogueWorkflow";
 
@@ -13,7 +12,6 @@ export async function handleCharacterChatRequest(payload: {
   llmType?: string;
   streaming?: boolean;
   language?: "zh" | "en";
-  promptType?: PromptType;
   number?: number;
   nodeId: string;
   fastModel: boolean;
@@ -28,7 +26,6 @@ export async function handleCharacterChatRequest(payload: {
       apiKey,
       llmType = "openai",
       language = "zh",
-      promptType = PromptType.EXPLICIT || PromptType.CUSTOM || PromptType.COMPANION,
       number = 200,
       nodeId,
       fastModel = false,
@@ -52,7 +49,6 @@ export async function handleCharacterChatRequest(payload: {
         temperature: 0.7,
         streaming: false,
         number,
-        promptType,
         fastModel,  
       };
       const workflowResult = await workflow.execute(workflowParams);

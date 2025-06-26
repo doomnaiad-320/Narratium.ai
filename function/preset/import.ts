@@ -1,4 +1,4 @@
-import { PresetOperations } from "@/lib/data/preset-operation";
+import { PresetOperations } from "@/lib/data/roleplay/preset-operation";
 
 export async function importPresetFromJson(jsonContent: string, customName?: string): Promise<{ success: boolean; presetId?: string; error?: string }> {
   try {

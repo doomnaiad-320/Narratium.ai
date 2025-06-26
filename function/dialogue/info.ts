@@ -1,5 +1,5 @@
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
-import { LocalCharacterRecordOperations } from "@/lib/data/character-record-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
+import { LocalCharacterRecordOperations } from "@/lib/data/roleplay/character-record-operation";
 import { Character } from "@/lib/core/character";
 
 export async function getCharacterDialogue(characterId: string, language: "en" | "zh" = "zh", username?: string) {

@@ -1,4 +1,4 @@
-import { CharacterRecord } from "@/lib/data/character-record-operation";
+import { CharacterRecord } from "@/lib/data/roleplay/character-record-operation";
 import { WorldBookEntry } from "@/lib/models/world-book-model";
 import { CharacterData } from "@/lib/models/character-model";
 import { adaptCharacterData } from "@/lib/adapter/tagReplacer";

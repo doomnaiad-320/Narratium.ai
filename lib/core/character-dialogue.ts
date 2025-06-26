@@ -5,7 +5,6 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { PromptAssembler } from "@/lib/core/prompt-assembler";
 import { RunnablePassthrough } from "@langchain/core/runnables";
-import { PromptType } from "@/lib/models/character-prompts-model";
 import { getCharacterCompressorPromptZh, getCharacterCompressorPromptEn } from "@/lib/prompts/character-prompts";
 import { CharacterHistory } from "@/lib/core/character-history";
 import { DialogueOptions } from "@/lib/models/character-dialogue-model";
@@ -16,7 +15,6 @@ export class CharacterDialogue {
   llm: any;
   dialogueChain: RunnablePassthrough | null = null;
   language: "zh" | "en" = "zh";
-  promptType: PromptType = PromptType.COMPANION;
   promptAssembler: PromptAssembler;
 
   constructor(character: Character) {
@@ -31,9 +29,6 @@ export class CharacterDialogue {
       if (options?.language) {
         this.language = options.language;
         this.history = new CharacterHistory(options.language);
-      }
-      if (options?.promptType) {
-        this.promptType = options.promptType;
       }
 
       this.promptAssembler = new PromptAssembler({

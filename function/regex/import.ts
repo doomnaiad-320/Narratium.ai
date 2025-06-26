@@ -1,4 +1,4 @@
-import { RegexScriptOperations } from "@/lib/data/regex-script-operation";
+import { RegexScriptOperations } from "@/lib/data/roleplay/regex-script-operation";
 import { RegexScript } from "@/lib/models/regex-script-model";
 import { v4 as uuidv4 } from "uuid";
 

@@ -1,37 +1,7 @@
 import { NodeTool } from "@/lib/nodeflow/NodeTool";
-import { LocalCharacterDialogueOperations } from "@/lib/data/character-dialogue-operation";
+import { LocalCharacterDialogueOperations } from "@/lib/data/roleplay/character-dialogue-operation";
 import { DialogueMessage } from "@/lib/models/character-dialogue-model";
-
-export class DialogueStory {
-  language: string;
-  userInput: string[];
-  responses: string[];
-
-  constructor(language: string, userInput: string[] | null = null, responses: string[] | null = null) {
-    this.language = language;
-    this.userInput = userInput || [];
-    this.responses = responses || [];
-  }
-
-  getStory(startIndex: number | null = null, endIndex: number | null = null): string {
-    if (startIndex === null) startIndex = 0;
-    if (endIndex === null) endIndex = this.responses.length;
-  
-    let result = "";
-    const userLabel = "User";
-    const assistantLabel = "Character";
-  
-    for (let i = startIndex; i < endIndex; i++) {
-      const userInput = this.userInput[i];
-      const response = this.responses[i];
-  
-      if (userInput) result += `${userLabel}: ${userInput}\n`;
-      if (response) result += `${assistantLabel}: ${response}\n`;
-    }
-  
-    return result.trim();
-  }
-}
+import { DialogueStory } from "@/lib/core/character-history";
 
 export class ContextNodeTools extends NodeTool {
   protected static readonly toolType: string = "context";
@@ -83,7 +53,6 @@ export class ContextNodeTools extends NodeTool {
       };
     } catch (error) {
       this.handleError(error as Error, "assembleChatHistory");
-      return { userMessage, messages: [] };
     }
   }
 
@@ -128,11 +97,6 @@ export class ContextNodeTools extends NodeTool {
       return { systemMessage, recentDialogue, historyDialogue };
     } catch (error) {
       this.handleError(error as Error, "loadCharacterHistory");
-      return { 
-        systemMessage: "", 
-        recentDialogue: new DialogueStory("en"), 
-        historyDialogue: new DialogueStory("en"),
-      };
     }
   }
 
@@ -151,12 +115,14 @@ export class ContextNodeTools extends NodeTool {
         parts.push(`开场白：${historyData.systemMessage}`);
       }
 
-      const compressedHistory = this.getCompressedHistory(historyData.historyDialogue, memoryLength);
+      // Use DialogueStory.getStory directly for compressed history
+      const compressedHistory = historyData.historyDialogue.getStory(0, Math.max(0, historyData.historyDialogue.responses.length - memoryLength));
       if (compressedHistory) {
         parts.push(`历史信息：${compressedHistory}`);
       }
 
-      const recentHistory = this.getRecentHistory(historyData.recentDialogue, memoryLength);
+      // Use DialogueStory.getStory directly for recent history
+      const recentHistory = historyData.recentDialogue.getStory(Math.max(0, historyData.recentDialogue.userInput.length - memoryLength));
       if (recentHistory) {
         parts.push(`最近故事：${recentHistory}`);
       }
@@ -167,25 +133,34 @@ export class ContextNodeTools extends NodeTool {
     }
   }
 
-  static getRecentHistory(dialogue: DialogueStory, memLen: number): string {
+  /**
+   * Generate conversation context for memory system
+   */
+  static async generateConversationContext(
+    characterId: string,
+    currentUserInput: string,
+    memoryLength: number = 3,
+  ): Promise<string> {
     try {
-      if (!dialogue) return "";
+      const historyData = await this.loadCharacterHistory(characterId);
       
-      const startIndex = Math.max(0, dialogue.userInput.length - memLen);
-      return dialogue.getStory(startIndex);
-    } catch (error) {
-      this.handleError(error as Error, "getRecentHistory");
-    }
-  }
-
-  static getCompressedHistory(dialogue: DialogueStory, memLen: number): string {
-    try {
-      if (!dialogue) return "";
+      // Get recent dialogue for context using DialogueStory.getStory directly
+      const recentHistory = historyData.recentDialogue.getStory(Math.max(0, historyData.recentDialogue.userInput.length - memoryLength));
       
-      const endIndex = Math.max(0, dialogue.responses.length - memLen);
-      return dialogue.getStory(0, endIndex);
+      // Build conversation context
+      const contextLines = [];
+      
+      if (recentHistory) {
+        contextLines.push(recentHistory);
+      }
+      
+      // Add current user input
+      contextLines.push(`User: ${currentUserInput}`);
+      
+      return contextLines.join("\n");
     } catch (error) {
-      this.handleError(error as Error, "getCompressedHistory");
+      this.handleError(error as Error, "generateConversationContext");
+      return `User: ${currentUserInput}`;
     }
   }
 } 
