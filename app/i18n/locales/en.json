@@ -323,8 +323,8 @@
     "customPrompt": "Custom Prompt",
     "customPromptFor": "Custom Prompts",
     "presets": "Presets",
-    "presetEditor": "Preset Editor",
-    "githubPresets": "GitHub Presets",
+    "presetEditor": "External Prompt",
+    "systemPresets": "Prompt selection",
     "noPresets": "No presets available",
     "prefixPrompt": "Prefix Prompt",
     "chainOfThoughtPrompt": "Chain of Thought",
@@ -362,7 +362,10 @@
     "disableFastModel": "Disable Fast Mode",
     "selectModel": "Select Model",
     "back": "Back",
-    "defaultModel": "Default"
+    "defaultModel": "Default",
+    "thinking": "'s thinking",
+    "characters": "characters",
+    "loadingDialogue": "Loading dialogue..."
   },
   "preset": {
     "title": "Preset Manager",
