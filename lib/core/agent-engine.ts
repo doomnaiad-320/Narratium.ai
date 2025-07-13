@@ -17,6 +17,9 @@ import { ChatPromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { ConfigManager, loadConfigFromLocalStorage } from "./config-manager";
 
+// Define streaming callback type for real-time token updates
+export type StreamingCallback = (chunk: string) => void;
+
 // ============================================================================
 // BACKGROUND KNOWLEDGE - CHARACTER CARDS AND WORLDBOOKS
 // ============================================================================
@@ -171,13 +174,31 @@ type UserInputCallback = (message?: string, options?: string[]) => Promise<strin
 export class AgentEngine {
   private conversationId: string;
   private userInputCallback?: UserInputCallback;
+  private streamingCallback?: StreamingCallback;
   private model: any; // LLM model instance
   private configManager: ConfigManager;
-
-  constructor(conversationId: string, userInputCallback?: UserInputCallback) {
+  
+  constructor(
+    conversationId: string, 
+    userInputCallback?: UserInputCallback,
+    streamingCallback?: StreamingCallback,
+  ) {
     this.conversationId = conversationId;
     this.userInputCallback = userInputCallback;
+    this.streamingCallback = streamingCallback;
     this.configManager = ConfigManager.getInstance();
+  }
+
+  // handleUserResponse method removed - user responses now handled through session state
+
+  /**
+   * Request user input through callback (CLI mode only)
+   */
+  private async requestUserInput(message?: string, options?: string[]): Promise<string> {
+    if (!this.userInputCallback) {
+      throw new Error("No user input callback available");
+    }
+    return await this.userInputCallback(message, options);
   }
 
   /**
@@ -455,32 +476,54 @@ ${taskQueue.map((task, i) => `${i + 1}. ${task.description} (${task.sub_problems
         await ResearchSessionOperations.completeCurrentSubProblem(this.conversationId); 
       }
 
-      // Handle ASK_USER tool - special case for user interaction flow control
+      // Handle ASK_USER tool - wait for user input
       if (decision.tool === ToolType.ASK_USER && result.success) {
-        if (!this.userInputCallback) {
-          throw new Error("User input required but no callback provided");
-        }
-
         await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.WAITING_USER);
         
-        const userInput = await this.userInputCallback(result.result?.message, result.result?.options);
-
+        // Add agent message indicating user input is needed
         await ResearchSessionOperations.addMessage(this.conversationId, {
           role: "agent",
-          content: result.result?.message,
+          content: `INPUT REQUIRED: ${result.result?.message || "Please provide your input"}${result.result?.options ? `\n\nOptions: ${result.result.options.join(", ")}` : ""}`,
           type: "agent_action",
+          metadata: {
+            tool: decision.tool,
+            parameters: decision.parameters,
+            reasoning: decision.reasoning,
+            result: result.result,
+          },
         });
         
-        await ResearchSessionOperations.addMessage(this.conversationId, {
-          role: "user",
-          content: userInput,
-          type: "user_input",
-        });
-        
-        await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.THINKING);
-        
-        // Complete current sub-problem after successful user interaction
-        await ResearchSessionOperations.completeCurrentSubProblem(this.conversationId);
+        // If there's a callback (CLI mode), get user input and continue
+        if (this.userInputCallback) {
+          try {
+            const userInput = await this.requestUserInput(result.result?.message, result.result?.options);
+            
+            // Add user response message
+            await ResearchSessionOperations.addMessage(this.conversationId, {
+              role: "user",
+              content: userInput,
+              type: "user_input",
+            });
+            
+            // Complete current sub-problem after successful user interaction
+            await ResearchSessionOperations.completeCurrentSubProblem(this.conversationId);
+          } catch (error) {
+            console.error("Failed to get user input:", error);
+            await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.FAILED);
+            return {
+              success: false,
+              error: "Failed to get user input",
+            };
+          }
+        } else {
+          // For web UI, gracefully exit the execution loop
+          // The session is now in WAITING_USER status and will be resumed later
+          console.log("🔄 Execution paused - waiting for user input via web UI");
+          return {
+            success: true,
+            result: "Execution paused - waiting for user input",
+          };
+        }
       }
 
       // Handle CHARACTER, STATUS, USER_SETTING, WORLD_VIEW, SUPPLEMENT tools - data updates and task completion evaluation
@@ -559,6 +602,35 @@ ${taskQueue.map((task, i) => `${i + 1}. ${task.description} (${task.sub_problems
           const evaluationResult = await this.evaluateGenerationProgress(generationOutput);
           if (evaluationResult === null) {
             console.log("✅ Final generation evaluation: Complete");
+            
+            // Add completion actions message before setting status to completed
+            const llmConfig = this.configManager.getLLMConfig();
+            await ResearchSessionOperations.addMessage(this.conversationId, {
+              role: "agent",
+              content: "🎉 角色和世界书生成完成！您可以选择以下操作：",
+              type: "completion_actions",
+              metadata: {
+                actions: [
+                  "generate_avatar",
+                  "search_avatar", 
+                  "download_character",
+                  "download_worldbook",
+                ],
+                sessionId: this.conversationId,
+                characterData: generationOutput.character_data,
+                worldbookData: {
+                  name: generationOutput.character_data?.name ? `${generationOutput.character_data.name} Worldbook` : "Generated Worldbook",
+                  entries: [
+                    ...(generationOutput.status_data ? [{ type: "STATUS", content: generationOutput.status_data }] : []),
+                    ...(generationOutput.user_setting_data ? [{ type: "USER_SETTING", content: generationOutput.user_setting_data }] : []),
+                    ...(generationOutput.world_view_data ? [{ type: "WORLD_VIEW", content: generationOutput.world_view_data }] : []),
+                    ...(generationOutput.supplement_data ? generationOutput.supplement_data.map((data: any) => ({ type: "SUPPLEMENT", content: data })) : []),
+                  ],
+                },
+                llmConfig,
+              },
+            });
+            
             await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.COMPLETED);
             return {
               success: true,
@@ -1261,12 +1333,20 @@ Task Progress: ${currentTask.sub_problems.length - remainingSubProblems}/${curre
   ): Promise<ExecutionResult> {
     await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.EXECUTING);
 
-    // Add execution message
-    await ResearchSessionOperations.addMessage(this.conversationId, {
-      role: "agent",
-      content: `Executing: ${decision.tool} - ${decision.reasoning}`,
-      type: "agent_action",
-    });
+    // Add execution message, but skip for ASK_USER as it has its own message format
+    if (decision.tool !== ToolType.ASK_USER) {
+      await ResearchSessionOperations.addMessage(this.conversationId, {
+        role: "agent",
+        content: `Executing: ${decision.tool} - ${decision.reasoning}`,
+        type: "agent_action",
+        metadata: {
+          tool: decision.tool,
+          parameters: decision.parameters,
+          reasoning: decision.reasoning,
+          priority: decision.priority,
+        },
+      });
+    }
 
     try {
       return await ToolRegistry.executeToolDecision(decision, context);
@@ -1284,7 +1364,7 @@ Task Progress: ${currentTask.sub_problems.length - remainingSubProblems}/${curre
    * Returns null if satisfied, or improvement suggestions string if not satisfied
    */
   private async evaluateGenerationProgress(generationOutput: GenerationOutput): Promise<string | null> {
-    // First, perform basic validation checks
+    // Perform basic validation checks only
     const basicValidation = this.performBasicValidation(generationOutput);
     if (!basicValidation.isValid) {
       const improvementMsg = `Basic validation failed: ${basicValidation.reason}`;
@@ -1299,248 +1379,8 @@ Task Progress: ${currentTask.sub_problems.length - remainingSubProblems}/${curre
       return improvementMsg;
     }
 
-    console.log("✅ Basic validation passed, proceeding with LLM quality assessment");
-
-    // If basic validation passes, use LLM for strict quality assessment
-    const prompt = createStandardPromptTemplate(`
-<prompt>
-  <system_role>
-    You are an expert quality assurance specialist for professional character AI content generation. Your role is to conduct rigorous, detailed quality assessment of character data and worldbook components to ensure they meet industry excellence standards. You must be extremely thorough and demanding in your evaluation.
-  </system_role>
-
-  <evaluation_context>
-    <generation_output>
-      {generation_output}
-    </generation_output>
-  </evaluation_context>
-
-  <strict_evaluation_criteria>
-    <essential_entry_analysis>
-      MANDATORY STRUCTURAL REQUIREMENTS:
-      1. Essential Entry Validation:
-         - STATUS entry: Must exist (only one), comment="STATUS", XML wrapper <status>content</status>
-         - USER_SETTING entry: Must exist (only one), comment="USER_SETTING", XML wrapper <user_setting>content</user_setting>
-         - WORLD_VIEW entry: Must exist (only one), comment="WORLD_VIEW", XML wrapper <world_view>content</world_view>
-         - SUPPLEMENT entries: Must be an array with at least 5 entries, each with non-empty content, each expanding a specific noun/entity from WORLD_VIEW
-      2. Content Length Assessment:
-         - STATUS, USER_SETTING, WORLD_VIEW: Each must be at least 500 words, optimal 800-1500 words
-         - SUPPLEMENT: Each entry must be at least 300 words, optimal 500-1000 words; report count and average word count
-      3. Content Quality Standards:
-         - STATUS: Must be a comprehensive real-time interface with organized sections, dynamic values, clear formatting with symbols, temporal/spatial context, character statistics, interactive elements
-         - USER_SETTING: Must include multi-dimensional profiling (basic info, appearance, personality layers, life circumstances, abilities with mechanisms, timeline integration, psychological depth, behavioral framework)
-         - WORLD_VIEW: Must contain systematic world-building (version control, historical timeline, system categories, hierarchical structure, interconnected elements, expansion interfaces)
-         - SUPPLEMENT: Each entry must expand a specific WORLD_VIEW element with rich detail, no duplication, and high diversity
-    </essential_entry_analysis>
-
-    <content_depth_analysis>
-      CONTENT QUALITY METRICS:
-      1. Detail Density: Are descriptions comprehensive and immersive, not superficial summaries?
-      2. World Coherence: Do all entries work together to create a logical, consistent world?
-      3. Narrative Utility: Does each entry provide actionable information for storytelling?
-      4. Professional Standards: Does content meet commercial-grade character AI expectations?
-      5. XML Format Compliance: Are essential entries properly wrapped in their specific XML tags?
-      6. Supplement Diversity: Are supplement entries based on different key terms/entities, and do they avoid duplication?
-    </content_depth_analysis>
-
-    <character_data_analysis>
-      CHARACTER EXCELLENCE STANDARDS:
-      - Personality: Multi-layered, distinctive, engaging personality with depth
-      - Scenario: Compelling context that provides clear roleplay direction
-      - First Message: Engaging, in-character, sets proper tone and context
-      - Example Messages: Consistent personality demonstration across multiple scenarios
-      - Creator Notes: Practical guidance for users and character behavior
-      - Description: Vivid, detailed character presentation
-    </character_data_analysis>
-  </strict_evaluation_criteria>
-
-  <critical_assessment_process>
-    STEP 1: Essential Entry Audit
-    - Verify presence of STATUS, USER_SETTING, WORLD_VIEW (each must exist, only one of each)
-    - Check XML wrapper format compliance for each essential entry
-    - Measure word count in each essential entry's content
-    - Assess content quality against excellence standards for each entry
-    - For SUPPLEMENT: count entries, check each for non-empty content, diversity, and connection to WORLD_VIEW nouns/entities
-    - Calculate average word count for supplement entries
-    - Assess overall supplement quality and diversity
-
-    STEP 2: Content Depth Evaluation
-    - Analyze detail density and comprehensiveness of each entry
-    - Evaluate world coherence and logical consistency
-    - Check narrative utility and storytelling enhancement value
-    - Assess professional quality standards
-
-    STEP 3: Supplementary Entry Assessment
-    - Verify minimum quantity requirements (at least 5 supplement entries)
-    - Check entry diversity: Tools/Weapons, Characters/NPCs, Buildings, Geography, Astronomy, War History, Organizations, Systems, Culture, Historical Figures, etc.
-    - Evaluate keyword strategies and discoverability in 'keys' field
-    - Check content depth and narrative value (500-1000 words per entry preferred)
-    - Assess integration with WORLD_VIEW foundation WITHOUT content duplication
-    - Verify each entry provides NEW specific details not covered in WORLD_VIEW
-
-    STEP 4: Overall Cohesion Analysis
-    - Character-worldbook integration and compatibility
-    - Consistency across all content elements
-    - Professional quality and commercial viability
-  </critical_assessment_process>
-
-  <instructions>
-    Conduct a RIGOROUS and DEMANDING evaluation. You must:
-    1. Actually count words in each essential entry (status, user_setting, world_view) and in each supplement entry
-    2. Specifically identify any missing essential entries or XML format issues
-    3. Evaluate content depth - reject superficial or brief content
-    4. Assess professional quality standards strictly
-    5. Provide specific, actionable improvement suggestions for REFLECT tool usage
-    6. FAIL any worldbook that lacks comprehensive, detailed content or proper structure
-    7. PASS only content that meets professional industry standards for character AI applications
-  </instructions>
-
-  <output_specification>
-    You MUST respond using the following XML format. Do not include any other text outside this block.
-
-    <evaluation_response>
-      <detailed_analysis>
-        <essential_entries_status>
-          <status_entry>
-            <present>true/false</present>
-            <xml_format_correct>true/false</xml_format_correct>
-            <word_count>actual number</word_count>
-            <quality_assessment>detailed quality analysis</quality_assessment>
-          </status_entry>
-          <user_setting_entry>
-            <present>true/false</present>
-            <xml_format_correct>true/false</xml_format_correct>
-            <word_count>actual number</word_count>
-            <quality_assessment>detailed quality analysis</quality_assessment>
-          </user_setting_entry>
-          <world_view_entry>
-            <present>true/false</present>
-            <xml_format_correct>true/false</xml_format_correct>
-            <word_count>actual number</word_count>
-            <quality_assessment>detailed quality analysis</quality_assessment>
-          </world_view_entry>
-        </essential_entries_status>
-        <supplementary_entries_assessment>
-          <count>actual number of supplement entries</count>
-          <average_word_count>average words per supplement entry</average_word_count>
-          <quality_summary>overall quality assessment of supplement content</quality_summary>
-        </supplementary_entries_assessment>
-        <content_depth_evaluation>Comprehensive analysis of content depth, detail density, and professional quality</content_depth_evaluation>
-      </detailed_analysis>
-      <character_quality_score>Character data quality score from 0 to 100</character_quality_score>
-      <worldbook_quality_score>Worldbook data quality score from 0 to 100</worldbook_quality_score>
-      <overall_quality_score>Overall quality score from 0 to 100</overall_quality_score>
-      <meets_professional_standards>true or false - only true if content meets commercial-grade standards (overall >= 90, worldbook >= 85, all essential entries present with proper XML and 500+ words, minimum 5 supplement entries)</meets_professional_standards>
-      <critical_issues>
-        <issue>Specific critical issue that must be addressed</issue>
-        <issue>Another critical issue requiring immediate attention</issue>
-      </critical_issues>
-      <improvement_tasks>
-        <task>Specific task for REFLECT tool to generate concrete action items</task>
-        <task>Another specific task for REFLECT tool task generation</task>
-      </improvement_tasks>
-    </evaluation_response>
-  </output_specification>
-</prompt>`);
-
-    const context = await this.buildExecutionContext();
-    const llm = this.createLLM();
-    const chain = prompt.pipe(llm).pipe(new StringOutputParser());
-
-    try {
-      const response = await chain.invoke({
-        generation_output: JSON.stringify(generationOutput, null, 2),
-      });
-
-      // Parse detailed XML response
-      const character_quality_score = parseInt(response.match(/<character_quality_score>(\d+)<\/character_quality_score>/)?.[1] ?? "0", 10);
-      const worldbook_quality_score = parseInt(response.match(/<worldbook_quality_score>(\d+)<\/worldbook_quality_score>/)?.[1] ?? "0", 10);
-      const overall_quality_score = parseInt(response.match(/<overall_quality_score>(\d+)<\/overall_quality_score>/)?.[1] ?? "0", 10);
-      const meets_professional_standards = response.match(/<meets_professional_standards>(true|false)<\/meets_professional_standards>/)?.[1] === "true";
-
-      // Extract detailed analysis sections
-      const content_depth_evaluation = response.match(/<content_depth_evaluation>([\s\S]*?)<\/content_depth_evaluation>/)?.[1].trim() ?? "No content depth evaluation provided";
-      
-      // Extract critical issues
-      const critical_issues: string[] = [];
-      const issuesMatch = response.match(/<critical_issues>([\s\S]*?)<\/critical_issues>/)?.[1] ?? "";
-      const issueRegex = /<issue>([\s\S]*?)<\/issue>/g;
-      let issueMatch;
-      while ((issueMatch = issueRegex.exec(issuesMatch)) !== null) {
-        critical_issues.push(issueMatch[1].trim());
-      }
-
-      // Extract improvement tasks
-      const improvement_tasks: string[] = [];
-      const tasksMatch = response.match(/<improvement_tasks>([\s\S]*?)<\/improvement_tasks>/)?.[1] ?? "";
-      const taskRegex = /<task>([\s\S]*?)<\/task>/g;
-      let taskMatch;
-      while ((taskMatch = taskRegex.exec(tasksMatch)) !== null) {
-        improvement_tasks.push(taskMatch[1].trim());
-      }
-
-      // Extract essential entries analysis for detailed logging
-      const status_present = response.match(/<status_entry>[\s\S]*?<present>(true|false)<\/present>[\s\S]*?<\/status_entry>/)?.[1] === "true";
-      const status_word_count = response.match(/<status_entry>[\s\S]*?<word_count>(\d+)<\/word_count>[\s\S]*?<\/status_entry>/)?.[1] ?? "0";
-      const user_setting_present = response.match(/<user_setting_entry>[\s\S]*?<present>(true|false)<\/present>[\s\S]*?<\/user_setting_entry>/)?.[1] === "true";
-      const user_setting_word_count = response.match(/<user_setting_entry>[\s\S]*?<word_count>(\d+)<\/word_count>[\s\S]*?<\/user_setting_entry>/)?.[1] ?? "0";
-      const world_view_present = response.match(/<world_view_entry>[\s\S]*?<present>(true|false)<\/present>[\s\S]*?<\/world_view_entry>/)?.[1] === "true";
-      const world_view_word_count = response.match(/<world_view_entry>[\s\S]*?<word_count>(\d+)<\/word_count>[\s\S]*?<\/world_view_entry>/)?.[1] ?? "0";
-
-      console.log("📊 Detailed Quality Assessment:");
-      console.log(`   Character: ${character_quality_score}%, Worldbook: ${worldbook_quality_score}%, Overall: ${overall_quality_score}%`);
-      console.log(`   Essential Entries: STATUS(${status_present ? "✅" : "❌"}, ${status_word_count}w), USER_SETTING(${user_setting_present ? "✅" : "❌"}, ${user_setting_word_count}w), WORLD_VIEW(${world_view_present ? "✅" : "❌"}, ${world_view_word_count}w)`);
-      console.log(`   Professional Standards: ${meets_professional_standards ? "✅ MET" : "❌ NOT MET"}`);
-      
-      if (meets_professional_standards) {
-        // Generation meets professional completion standards
-        console.log("✅ Content meets professional standards - Generation complete");
-        return null;
-      } else {
-        // Generation needs improvement - return detailed analysis
-        const improvementMsg = `🔍 RIGOROUS QUALITY ASSESSMENT RESULTS (Overall: ${overall_quality_score}%):
-
-📊 SCORES:
-• Character Quality: ${character_quality_score}%
-• Worldbook Quality: ${worldbook_quality_score}%
-• Overall Quality: ${overall_quality_score}%
-• Professional Standards: ${meets_professional_standards ? "✅ MET" : "❌ NOT MET"}
-
-🔍 ESSENTIAL ENTRIES STATUS:
-• STATUS: ${status_present ? "✅ Present" : "❌ Missing"} (${status_word_count} words)
-• USER_SETTING: ${user_setting_present ? "✅ Present" : "❌ Missing"} (${user_setting_word_count} words) 
-• WORLD_VIEW: ${world_view_present ? "✅ Present" : "❌ Missing"} (${world_view_word_count} words)
-
-📝 CONTENT DEPTH EVALUATION:
-${content_depth_evaluation}
-
-🚨 CRITICAL ISSUES:
-${critical_issues.length > 0 ? critical_issues.map(issue => `• ${issue}`).join("\n") : "• No critical issues identified"}
-
-🎯 IMMEDIATE ACTION REQUIRED:
-Use REFLECT tool to generate new tasks based on these specific improvement requirements:
-${improvement_tasks.map(task => `• ${task}`).join("\n")}`;
-
-        await ResearchSessionOperations.addMessage(this.conversationId, {
-          role: "agent",
-          content: improvementMsg,
-          type: "quality_evaluation",
-        }); 
-
-        return improvementMsg;
-      }
-
-    } catch (error) {
-      console.error("❌ Generation evaluation failed:", error);
-      const errorMsg = `Generation evaluation failed: ${error instanceof Error ? error.message : String(error)}\n\nNext step: Call REFLECT tool to analyze and create new tasks to continue generation progress.`;
-      
-      await ResearchSessionOperations.addMessage(this.conversationId, {
-        role: "agent",
-        content: errorMsg,
-        type: "quality_evaluation",
-      });
-
-      return errorMsg;
-    }
+    console.log("✅ Basic validation passed - Generation complete");
+    return null; // Generation is complete if basic validation passes
   }
 
   /**
@@ -1636,14 +1476,28 @@ ${improvement_tasks.map(task => `• ${task}`).join("\n")}`;
         },
         temperature: llmConfig.temperature,
         maxTokens: llmConfig.max_tokens,
-        streaming: false,
+        streaming: true, // Enable streaming for real-time token updates
+        callbacks: this.streamingCallback ? [{
+          handleLLMNewToken: (token: string) => {
+            if (this.streamingCallback) {
+              this.streamingCallback(token);
+            }
+          },
+        }] : undefined,
       });
     } else if (llmConfig.llm_type === "ollama") {
       return new ChatOllama({
         model: llmConfig.model_name,
         baseUrl: llmConfig.base_url || "http://localhost:11434",
         temperature: llmConfig.temperature,
-        streaming: false,
+        streaming: true, // Enable streaming for real-time token updates
+        callbacks: this.streamingCallback ? [{
+          handleLLMNewToken: (token: string) => {
+            if (this.streamingCallback) {
+              this.streamingCallback(token);
+            }
+          },
+        }] : undefined,
       });
     }
 
@@ -1904,6 +1758,52 @@ ${improvement_tasks.map(task => `• ${task}`).join("\n")}`;
     
     // All worldbook components complete
     return "OVERALL STATUS: ✅ Generation complete - Ready for final evaluation";
+  }
+
+  /**
+    * Continue execution after user input
+    * This method can be called on a fresh engine instance to resume execution
+    */
+  async continueExecution(userResponse?: string): Promise<{
+     success: boolean;
+     result?: any;
+     error?: string;
+   }> {
+    try {
+      // Initialize ConfigManager with localStorage data if not already configured
+      if (!this.configManager.isConfigured()) {
+        const config = loadConfigFromLocalStorage();
+        this.configManager.setConfig(config);
+      }
+
+      // Initialize the model
+      this.model = this.createLLM();
+       
+      // Get current execution context from session
+      const context = await this.buildExecutionContext();
+       
+      // Verify session is in a continuable state
+      const session = await ResearchSessionOperations.getSessionById(this.conversationId);
+      if (!session) {
+        throw new Error("Session not found");
+      }
+
+      // Complete the current sub-problem since user has responded
+      if (session.status === SessionStatus.THINKING || session.status === SessionStatus.IDLE) {
+        await ResearchSessionOperations.completeCurrentSubProblem(this.conversationId);
+      }
+
+      // Continue with the main execution loop
+      return await this.executionLoop();
+       
+    } catch (error) { 
+      await ResearchSessionOperations.updateStatus(this.conversationId, SessionStatus.FAILED);
+       
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : "Unknown error",
+      };
+    } 
   }
 } 
  
