@@ -10,6 +10,7 @@ import "@/app/styles/fantasy-ui.css";
 import { History, Trash2, ChevronDown } from "lucide-react";
 import { listAgentSessions } from "@/function/agent/list";
 import { deleteAgentSession } from "@/function/agent/delete-session";
+import { useAuth } from "@/hooks/useAuth";
 
 // Current app version from package.json
 const CURRENT_VERSION = "1.1.9";
@@ -18,13 +19,13 @@ interface SidebarProps {
   isOpen: boolean;
   toggleSidebar: () => void;
   openLoginModal: () => void;
+  openAccountModal?: () => void;
 }
 
-export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: SidebarProps) {
+export default function Sidebar({ isOpen, toggleSidebar, openLoginModal, openAccountModal }: SidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [username, setUsername] = useState("");
+  const { user, isAuthenticated, logout } = useAuth();
   const [isHomeOpen, setIsHomeOpen] = useState(true);
   const [isGameOpen, setIsGameOpen] = useState(true);
 
@@ -42,14 +43,6 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
   }, []);
 
   useEffect(() => {
-    const loggedIn = localStorage.getItem("isLoggedIn") === "true";
-    const storedUsername = localStorage.getItem("username");
-
-    setIsLoggedIn(loggedIn);
-    if (storedUsername) {
-      setUsername(storedUsername);
-    }
-    
     if (isCreatorOpen && isOpen) {
       fetchHistory();
     }
@@ -102,14 +95,10 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
     return () => clearTimeout(timer);
   }, [hasCheckedUpdate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isLoggedIn");
-    localStorage.removeItem("username");
-    localStorage.removeItem("userId");
-
-    setIsLoggedIn(false);
-
-    router.push("/");
+  const handleOpenAccount = () => {
+    if (openAccountModal) {
+      openAccountModal();
+    }
   };
 
   const isHomeActive = pathname === "/";
@@ -436,7 +425,7 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
         `}</style>
         
         <div className="mb-2">
-          {!isLoggedIn ? (
+          {!isAuthenticated ? (
             <button 
               onClick={openLoginModal}
               data-tour="login-button"
@@ -477,23 +466,22 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
             </button>
           ) : (
             <button
-              onClick={handleLogout}
+              onClick={handleOpenAccount}
               className={`focus:outline-none group relative overflow-hidden rounded-md w-full transition-all duration-300 ${!isOpen ? "p-2 flex justify-center" : "py-1.5 px-2 flex items-center justify-center"} cursor-pointer`}
             >
               <div className="absolute inset-0 bg-gradient-to-br from-[#242424]/0 to-[#1a1a1a]/0 opacity-0 group-hover:opacity-80 transition-opacity duration-300"></div>
               <div className="relative flex items-center justify-center w-full transition-all duration-300 z-10">
                 <div className={`${isOpen ? "w-6 h-6" : "w-8 h-8"} flex items-center justify-center flex-shrink-0 text-[#f8d36a] group-hover:text-[#ffc107] transition-colors duration-300 `}>
                   <svg xmlns="http://www.w3.org/2000/svg" width={isOpen ? "14" : "16"} height={isOpen ? "14" : "16"} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="transition-transform duration-300 group-hover:scale-110">
-                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                    <polyline points="16 17 21 12 16 7" />
-                    <line x1="21" y1="12" x2="9" y2="12" />
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
                   </svg>
                 </div>
                 {isOpen && (
                   <div className="ml-2 transition-all duration-300 ease-in-out overflow-hidden" style={{ transitionDelay: isOpen ? "50ms" : "0ms", opacity: isOpen ? 1 : 0 }}>
                     <div>
                       <span className={`magical-text whitespace-nowrap block text-xs font-medium bg-clip-text text-transparent bg-gradient-to-r from-[#f8d36a] to-[#ffc107] ${fontClass}`}>
-                        {isOpen && username.split("").map((char, index) => (
+                        {isOpen && user?.username.split("").map((char, index) => (
                           <span 
                             key={index} 
                             className="inline-block transition-all duration-300" 
@@ -511,7 +499,7 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
                     </div>
                     <div className="mt-1">
                       <span className={`magical-text whitespace-nowrap block text-xs font-medium bg-clip-text text-transparent bg-gradient-to-r from-[#f8d36a] to-[#ffc107] ${fontClass}`}>
-                        {isOpen && t("sidebar.logout").split("").map((char, index) => (
+                        {isOpen && t("sidebar.openAccount").split("").map((char, index) => (
                           <span 
                             key={index} 
                             className="inline-block transition-all duration-300" 
@@ -634,4 +622,3 @@ export default function Sidebar({ isOpen, toggleSidebar, openLoginModal }: Sideb
     </div>
   );
 }
-
