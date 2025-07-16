@@ -188,7 +188,11 @@
     "guestMode": "Guest Mode",
     "guestAccount": "Guest Account",
     "verifiedAccount": "Verified Account",
-    "logout": "Sign Out"
+    "logout": "Sign Out",
+    "usernameRequired": "Username is required",
+    "usernameLength": "Username must be between 3 and 30 characters",
+    "usernameUpdated": "Username updated successfully",
+    "updateFailed": "Update failed, please try again"
   },
   "storiesPage": {
     "title": "My Story Collection",
@@ -849,5 +853,29 @@
     "skip": "Skip",
     "finish": "Finish",
     "resetTour": "Reset Tour"
+  },
+  "plugins": {
+    "title": "Plugin Manager",
+    "management": "Plugin Management",
+    "refresh": "Refresh",
+    "allPlugins": "All Plugins",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "enable": "Enable",
+    "disable": "Disable",
+    "homepage": "Homepage",
+    "details": "Details",
+    "loading": "Loading plugins...",
+    "noPluginsFound": "No plugins found",
+    "noEnabledPlugins": "No enabled plugins found",
+    "noDisabledPlugins": "No disabled plugins found",
+    "pluginDirectory": "Please place plugins in the public/plugins/ directory",
+    "systemStatus": "System Status: Normal",
+    "pluginStats": "Plugins: {enabled} enabled / {total} total",
+    "displayCount": "Showing {filtered} / {total} plugins",
+    "version": "Version: 1.0.0",
+    "enhancedSystem": "Enhanced Plugin System",
+    "error": "Error:",
+    "items": "items"
   }
 }

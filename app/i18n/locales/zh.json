@@ -188,7 +188,11 @@
     "guestMode": "游客模式",
     "guestAccount": "游客账户",
     "verifiedAccount": "认证账户",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "usernameRequired": "用户名不能为空",
+    "usernameLength": "用户名长度必须在3-30个字符之间",
+    "usernameUpdated": "用户名更新成功",
+    "updateFailed": "更新失败，请重试"
   },
   "storiesPage": {
     "title": "我的故事",
@@ -853,5 +857,29 @@
     "skip": "跳过",
     "finish": "完成",
     "resetTour": "重置引导"
+  },
+  "plugins": {
+    "title": "插件管理器",
+    "management": "插件管理",
+    "refresh": "刷新",
+    "allPlugins": "全部插件",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "enable": "启用",
+    "disable": "禁用",
+    "homepage": "主页",
+    "details": "详情",
+    "loading": "加载插件中...",
+    "noPluginsFound": "没有找到插件",
+    "noEnabledPlugins": "没有找到已启用的插件",
+    "noDisabledPlugins": "没有找到已禁用的插件",
+    "pluginDirectory": "请将插件放置在 public/plugins/ 目录中",
+    "systemStatus": "系统状态: 正常",
+    "pluginStats": "插件: {enabled} 已启用 / {total} 总计",
+    "displayCount": "显示 {filtered} / {total} 个插件",
+    "version": "版本: 1.0.0",
+    "enhancedSystem": "增强插件系统",
+    "error": "错误:",
+    "items": "项"
   }
 }
