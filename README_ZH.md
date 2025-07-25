@@ -29,7 +29,6 @@
 </p>
 
 <div align="center">
-  <a href="https://narratium.org">🔗 Live Demo</a> &nbsp;|&nbsp;
   <a href="https://deepwiki.com/Narratium/Narratium.ai/">📖 DeepWiki Docs</a> &nbsp;|&nbsp;
   <a href="https://discord.gg/PP7EpSzDfU">💬 Discord Community</a> &nbsp;|&nbsp;
   <a href="https://github.com/Narratium/Narratium.ai/releases">💾 Download</a> &nbsp;|&nbsp;
@@ -71,6 +70,15 @@
 | :---------------- |
 
 [Narratium.ai](https://narratium.org/) 是一个用于创建AI角色、沉浸式世界和动态对话的开源平台。它是您构建个性化角色扮演冒险的创意工作室 — 从情感旅程到史诗传奇。
+
+| 体验与游玩 |
+| :---------------- |
+
+<div align="center">
+  <a href="https://narratium.org">官方服务（注册即可免费使用）</a> &nbsp;|&nbsp;
+  <a href="https://narratium-ai-woad.vercel.app/">🧪 开源版本预览</a>
+</div>
+
 
 | 版本说明 |
 | :---------------- |
