@@ -966,6 +966,11 @@
     "tip": "💡 Tip: You can also install directly from your browser by clicking \"Install\" when prompted.",
     "close": "Close"
   },
+  "toast": {
+    "success": "Success",
+    "warning": "Warning",
+    "error": "Error"
+  },
   "userNameSetting": {
     "title": "Username Settings",
     "description": "Set the username displayed in conversations, does not affect login name",

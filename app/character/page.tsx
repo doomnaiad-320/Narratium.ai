@@ -41,7 +41,7 @@ import PresetEditor from "@/components/PresetEditor";
 import CharacterChatHeader from "@/components/CharacterChatHeader";
 import UserTour from "@/components/UserTour";
 import { useTour } from "@/hooks/useTour";
-import ErrorToast from "@/components/ErrorToast";
+import { Toast } from "@/components/Toast";
 import LoginModal from "@/components/LoginModal";
 import { useAuth } from "@/hooks/useAuth";
 import { getDisplayUsername } from "@/utils/username-helper";
@@ -794,7 +794,8 @@ export default function CharacterPage() {
           localStorage.setItem("narratium_character_tour_completed", "true");
         }}
       />
-      <ErrorToast
+      <Toast
+        type="error"
         message={errorToast.message}
         isVisible={errorToast.isVisible}
         onClose={hideErrorToast}
