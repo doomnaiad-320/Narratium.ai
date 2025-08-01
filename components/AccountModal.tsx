@@ -119,7 +119,7 @@ export default function AccountModal({ isOpen, onClose }: AccountModalProps) {
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center">
+        <div key="account-modal" className="fixed inset-0 z-[9999] flex items-center justify-center">
           {/* Backdrop */}
           <motion.div 
             initial={{ opacity: 0 }}
@@ -334,6 +334,7 @@ export default function AccountModal({ isOpen, onClose }: AccountModalProps) {
       )}
       
       <Toast
+        key="account-error-toast"
         message={errorToast.message}
         isVisible={errorToast.isVisible}
         onClose={hideErrorToast}
@@ -342,4 +343,4 @@ export default function AccountModal({ isOpen, onClose }: AccountModalProps) {
     </AnimatePresence>
   );
 } 
- 
+

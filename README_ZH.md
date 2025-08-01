@@ -198,7 +198,12 @@
 
 * 如果你喜欢这个项目，我们非常欢迎你加入
 * If you like this project, we warmly welcome you to join us
-[Discord社区](https://discord.gg/PP7EpSzDfU)
+<div align="center">
+  <img src="public/qq.jpg" alt="QQ群二维码" width="220" />
+  <div>官方 QQ 用户群</div>
+</div>
+
+[Discord 技术社区](https://discord.gg/PP7EpSzDfU)
 
 | 代码贡献者 |
 | :--------------- |
