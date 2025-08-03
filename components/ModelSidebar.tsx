@@ -519,6 +519,7 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
    * Tests the current model configuration using LangChain
    * Sends a test request to verify the configuration works
    * Uses a minimal test prompt to check model connectivity and response
+   * Includes Windows-specific fixes for Ollama connectivity
    */
   const handleTestModel = async () => {
     if (!baseUrl || !model) return;
@@ -528,6 +529,26 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
     setTestModelError(false);
     
     try {
+      // For Ollama on Windows, ensure proper URL formatting
+      let finalBaseUrl = baseUrl;
+      if (llmType === "ollama") {
+        // Handle Windows-specific URL issues
+        if (finalBaseUrl === "localhost:11434" || finalBaseUrl === "11434") {
+          finalBaseUrl = "http://localhost:11434";
+        } else if (finalBaseUrl.startsWith("localhost:") && !finalBaseUrl.startsWith("http://")) {
+          finalBaseUrl = "http://" + finalBaseUrl;
+        } else if (!finalBaseUrl.startsWith("http://") && !finalBaseUrl.startsWith("https://")) {
+          finalBaseUrl = "http://" + finalBaseUrl;
+        }
+        
+        // Remove trailing slash if present
+        if (finalBaseUrl.endsWith("/")) {
+          finalBaseUrl = finalBaseUrl.slice(0, -1);
+        }
+
+        console.log(`Testing Ollama connection to: ${finalBaseUrl}`);
+      }
+
       // Initialize the appropriate LangChain client based on LLM type
       const chatModel = llmType === "openai" 
         ? new ChatOpenAI({
@@ -536,33 +557,61 @@ export default function ModelSidebar({ isOpen, toggleSidebar }: ModelSidebarProp
           configuration: {
             baseURL: baseUrl,
           },
+          timeout: 30000, // 30 second timeout
         })
         : new ChatOllama({
-          baseUrl: baseUrl,
+          baseUrl: finalBaseUrl,
           model: model,
+          temperature: 0.1, // Lower temperature for more consistent test responses
         });
 
-      // Send test message using LangChain
-      const response = await chatModel.invoke([
-        {
-          role: "system",
-          content: "You are a helpful AI assistant.",
-        },
-        {
-          role: "user",
-          content: "Hello, this is a test message. Please respond with 'Test successful' if you can read this.",
-        },
-      ]);
+      // Send test message using LangChain with simpler format for better compatibility
+      const testMessage = llmType === "ollama" 
+        ? "Hi"  // Very simple message for Ollama to avoid prompt issues
+        : "Hello, this is a test message. Please respond with 'Test successful' if you can read this.";
 
-      // Verify the response
-      if (response.content.toString().toLowerCase().includes("test successful")) {
+      const messages = llmType === "ollama"
+        ? [{ role: "user", content: testMessage }]
+        : [
+          { role: "system", content: "You are a helpful AI assistant." },
+          { role: "user", content: testMessage },
+        ];
+
+      console.log(`Sending test message to ${llmType}:`, testMessage);
+      
+      const response = await chatModel.invoke(messages);
+      const responseContent = response.content.toString().trim();
+
+      console.log(`Received response from ${llmType}:`, responseContent);
+
+      // More flexible response validation - just check if we got any meaningful response
+      if (responseContent && responseContent.length > 0) {
+        console.log("Model test successful. Response:", responseContent);
         setTestModelSuccess(true);
         setTimeout(() => setTestModelSuccess(false), 2000);
       } else {
-        throw new Error("Invalid response content");
+        throw new Error("Empty or invalid response from model");
       }
     } catch (error) {
-      console.error("Test failed:", error);
+      console.error("Model test failed:", error);
+      
+      // Provide more specific error information for Ollama
+      if (llmType === "ollama") {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        
+        if (errorMessage.includes("ECONNREFUSED") || errorMessage.includes("fetch failed")) {
+          console.error("Ollama connection failed. Please ensure:");
+          console.error("1. Ollama is running on Windows");
+          console.error("2. The model is downloaded: ollama pull " + model);
+          console.error("3. Try: ollama serve");
+          console.error("4. Check if Windows Firewall is blocking the connection");
+        } else if (errorMessage.includes("model") && errorMessage.includes("not found")) {
+          console.error(`Model '${model}' not found. Please run: ollama pull ${model}`);
+        } else if (errorMessage.includes("timeout")) {
+          console.error("Request timeout. The model might be loading or the server is slow.");
+        }
+      }
+      
       setTestModelError(true);
       setTimeout(() => setTestModelError(false), 2000);
     } finally {

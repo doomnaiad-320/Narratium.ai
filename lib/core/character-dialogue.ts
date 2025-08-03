@@ -125,9 +125,22 @@ export class CharacterDialogue {
         streamUsage: false,
       });
     } else if (llmType === "ollama") {
+      // Ensure proper URL formatting for Windows compatibility
+      let finalBaseUrl = baseUrl && baseUrl.trim() ? baseUrl.trim() : "http://localhost:11434";
+      if (finalBaseUrl === "localhost:11434" || finalBaseUrl === "11434") {
+        finalBaseUrl = "http://localhost:11434";
+      } else if (finalBaseUrl.startsWith("localhost:") && !finalBaseUrl.startsWith("http://")) {
+        finalBaseUrl = "http://" + finalBaseUrl;
+      } else if (!finalBaseUrl.startsWith("http://") && !finalBaseUrl.startsWith("https://")) {
+        finalBaseUrl = "http://" + finalBaseUrl;
+      }
+      if (finalBaseUrl.endsWith("/")) {
+        finalBaseUrl = finalBaseUrl.slice(0, -1);
+      }
+
       this.llm = new ChatOllama({
         model: safeModel,
-        baseUrl: baseUrl && baseUrl.trim() ? baseUrl.trim() : "http://localhost:11434",
+        baseUrl: finalBaseUrl,
         temperature: llmSettings.temperature,
         topK: llmSettings.topK,
         topP: llmSettings.topP,
